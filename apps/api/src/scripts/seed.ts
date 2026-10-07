@@ -6,7 +6,7 @@ import { User } from '../models/User.js';
 
 const password = process.env.SEED_PASSWORD || crypto.randomBytes(9).toString('base64url');
 const ownerEmail = (process.env.SEED_OWNER_EMAIL || 'owner@demo-chambers.ng').toLowerCase();
-const operatorEmail = (process.env.SEED_OPERATOR_EMAIL || 'operator@tesseractprints.ng').toLowerCase();
+const operatorEmail = (process.env.SEED_OPERATOR_EMAIL || 'operator@tesseractprints.com').toLowerCase();
 
 await connectDb({ info: () => {} });
 

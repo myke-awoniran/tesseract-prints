@@ -228,8 +228,8 @@ export const FAQ: FaqTopic[] = [
 ];
 
 export const CONTACT = {
-  email: 'desk@tesseractprints.ng',
-  phone: '+234 000 000 0000',
-  address: 'Office address, Abuja',
+  email: 'desk@tesseractprints.com',
+  phone: '+234 913 686 3427',
+  address: 'Maitama, Abuja, Nigeria',
   company: 'Tesseract Prints Limited'
 };

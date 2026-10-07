@@ -16,9 +16,9 @@ function BarChart({ series }: { series: StatsResponse['series'] }) {
   const ticks = [0, Math.ceil(max / 2), max];
   return (
     <svg className="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Orders per month: ${series.map((s) => `${s.month} ${s.orders}`).join(', ')}`} preserveAspectRatio="none">
-      {ticks.map((t) => {
+      {ticks.map((t, i) => {
         const y = pad.t + (h - pad.t - pad.b) * (1 - t / max);
-        return <line key={t} x1={pad.l} x2={w - pad.r} y1={y} y2={y} stroke="#26212b" strokeWidth="1" />;
+        return <line key={i} x1={pad.l} x2={w - pad.r} y1={y} y2={y} style={{ stroke: 'var(--c-line)' }} strokeWidth="1" />;
       })}
       {series.map((s, i) => {
         const bh = ((h - pad.t - pad.b) * s.orders) / max;
@@ -27,9 +27,9 @@ function BarChart({ series }: { series: StatsResponse['series'] }) {
         const last = i === series.length - 1;
         return (
           <g key={s.month}>
-            <rect x={x} y={y} width={bw * 0.44} height={Math.max(bh, s.orders ? 2 : 0)} rx="3" fill={last ? '#B79BD3' : '#4B2A72'} />
+            <rect x={x} y={y} width={bw * 0.44} height={Math.max(bh, s.orders ? 2 : 0)} rx="3" style={{ fill: last ? 'var(--c-chart-bar-current)' : 'var(--c-chart-bar)' }} />
             {s.orders > 0 && (
-              <text x={x + bw * 0.22} y={y - 6} textAnchor="middle" style={{ fill: '#c7b0dc' }}>
+              <text x={x + bw * 0.22} y={y - 6} textAnchor="middle" style={{ fill: 'var(--c-lilac)' }}>
                 {s.orders}
               </text>
             )}

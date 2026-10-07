@@ -5,6 +5,7 @@ import { Link, Redirect, useRouter } from '../../lib/router';
 import { Wordmark } from '../../components/Logo';
 import { Icon } from '../../components/Icons';
 import { initials } from '../../lib/format';
+import { consoleClass, useConsoleTheme } from '../../lib/theme';
 
 type NavItem = { to: string; label: string; icon: (typeof Icon)[keyof typeof Icon] };
 
@@ -20,12 +21,13 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
   const { state, logout } = useAuth();
   const { path } = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, toggleTheme] = useConsoleTheme();
 
   useEffect(() => setMenuOpen(false), [path]);
 
   if (state.status === 'loading') {
     return (
-      <div className="console" style={{ display: 'grid', placeItems: 'center' }}>
+      <div className={consoleClass(theme)} style={{ display: 'grid', placeItems: 'center' }}>
         <span className="spinner" aria-label="Loading" />
       </div>
     );
@@ -39,10 +41,10 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
   const nav = user.role === 'operator' ? OPERATOR_NAV : CLIENT_NAV;
 
   return (
-    <div className="console">
+    <div className={consoleClass(theme)}>
       <div className="mobile-bar">
         <Link to="/console" className="sidebar__brand" aria-label="Console home">
-          <Wordmark size={30} fill="#4B2384" line="#FFFFFF" />
+          <Wordmark size={30} fill="#FFFFFF" line="#2B1442" />
         </Link>
         <button type="button" className="sidebar__signout" aria-label="Open menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
           <Icon.Menu />
@@ -52,7 +54,7 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
         <aside className={`sidebar${menuOpen ? ' is-open' : ''}`} aria-label="Console">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Link to="/" className="sidebar__brand" aria-label="Tesseract Prints website">
-              <Wordmark size={32} fill="#4B2384" line="#FFFFFF" />
+              <Wordmark size={30} fill="#FFFFFF" line="#2B1442" />
             </Link>
             {menuOpen && (
               <button type="button" className="sidebar__signout" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
@@ -64,6 +66,7 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
             <small>{user.role === 'operator' ? 'Tesseract Prints' : 'Organisation'}</small>
             <strong>{user.role === 'operator' ? 'Print room' : organization?.name}</strong>
           </div>
+          <p className="sidebar__label">{user.role === 'operator' ? 'Print room' : 'Workspace'}</p>
           <nav>
             {nav.map((item) => (
               <Link key={item.to} to={item.to}>
@@ -78,6 +81,15 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
               <strong>{user.name}</strong>
               <small>{user.role}</small>
             </div>
+            <button
+              type="button"
+              className="sidebar__signout"
+              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+              onClick={toggleTheme}
+            >
+              {theme === 'light' ? <Icon.Moon width={18} height={18} /> : <Icon.Sun width={18} height={18} />}
+            </button>
             <button type="button" className="sidebar__signout" aria-label="Sign out" title="Sign out" onClick={logout}>
               <Icon.SignOut width={18} height={18} />
             </button>
