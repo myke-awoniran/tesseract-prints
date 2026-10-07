@@ -177,6 +177,10 @@ export default function Express() {
     let order = created;
     try {
       if (!order) {
+        if (!file) {
+          setStep(0);
+          return;
+        }
         setBusy('uploading');
         setProgress(0);
         const fd = new FormData();

@@ -108,7 +108,7 @@ export default function NewOrder() {
     if (form.address.trim().length < 6) errs.address = 'Enter the delivery address.';
     if (!form.phone.trim()) errs.phone = 'Enter a contact number for the recipient.';
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length || !file) return;
 
     setBusy(true);
     setError('');
