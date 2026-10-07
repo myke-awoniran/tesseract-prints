@@ -38,7 +38,7 @@ export const config: AppConfig = {
   isProd,
   port: Number(env.PORT || 4000),
   host: env.HOST || '0.0.0.0',
-  mongoUri: required('MONGODB_URI', 'mongodb://127.0.0.1:27017/tesseract-prints'),
+  mongoUri: required('MONGO_URI', 'mongodb://127.0.0.1:27017/tesseract-prints'),
   jwtSecret: required('JWT_SECRET', 'dev-only-secret-do-not-use-in-production'),
   fileKey: parseKey(required('FILE_ENCRYPTION_KEY', DEV_FILE_KEY)),
   webUrl,
