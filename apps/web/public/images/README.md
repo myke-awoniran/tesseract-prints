@@ -1,19 +1,23 @@
 # Images
 
-The hero slideshow reads its slides from `src/content/site.ts`. Drop these files here:
+The hero slideshow reads its slides from `src/content/site.ts` (`SLIDES`). Each slide has a full-size file
+(2400px wide) and an optional `-sm` file (1280px) for phones.
 
-| File | What to use |
-| --- | --- |
-| `bridge.jpg` | Included (your photo) |
-| `abuja-aso-rock.jpg` | Aso Rock, ideally at golden hour |
-| `abuja-national-mosque.jpg` | Abuja National Mosque |
-| `abuja-cbd.jpg` | Central Business District skyline / Millennium Tower |
-| `abuja-city-gate.jpg` | City Gate or Millennium Park |
+| File | Subject | Photographer | Licence |
+| --- | --- | --- | --- |
+| `abuja-aso-rock.jpg` | Aso Rock, Abuja | Uzoma Ozurumba | CC BY-SA 4.0 |
+| `lagos-victoria-island.jpg` | Victoria Island, Lagos | Ayorinde Ogundele | CC BY-SA 4.0 |
+| `abuja-national-mosque.jpg` | National Mosque, Abuja | Mark Fischer | CC BY-SA 2.0 |
+| `lagos-third-mainland.jpg` | Third Mainland Bridge, Lagos | S. Aderogba | CC BY-SA 4.0 |
+| `lagos-lekki-ikoyi.jpg` | Lekki–Ikoyi Link Bridge, Lagos | Chippla | CC BY-SA 3.0 |
+| `lagos-island.jpg` | Lagos Island | Sir Demo | CC BY-SA 4.0 |
+| `bridge.jpg` | Suspension bridge | Your own photo | n/a |
 
-Any slide whose file is missing shows a tinted panel instead, so the site never breaks.
+All third-party photos are from Wikimedia Commons. Their licences require crediting the photographer,
+which the hero does with the small "Photo: …" link on each slide. Keep the `credit` field when you swap a photo.
 
-Use photos you own, commission, or license (for example from Unsplash or Pexels under their licences).
-Images saved from Pinterest usually belong to someone else and are not licensed for commercial use.
+Use photos you own, commission, or license (Wikimedia Commons, Unsplash, Pexels). Images saved from Pinterest
+usually belong to someone else and are not licensed for commercial use.
 
-Recommended: landscape JPEG, at least 2400px wide, under 600 KB (export at ~80% quality).
-The site renders them in a purple monochrome automatically, so colour grading doesn't matter.
+Recommended: landscape JPEG, 2400px wide, under 600 KB. The site renders them in a purple monochrome
+automatically, so colour grading doesn't matter. Set `focus` (a CSS object-position) to keep the subject in frame on phones.

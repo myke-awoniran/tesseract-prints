@@ -2,8 +2,14 @@
 
 export interface Slide {
   src: string;
+  /** Smaller rendition for phones; falls back to `src` */
+  srcSm?: string;
   alt: string;
+  city: string;
   caption: string;
+  /** CSS object-position, so the subject stays in frame on narrow screens */
+  focus?: string;
+  credit?: { author: string; license: string; url: string };
 }
 export interface TitledText {
   title: string;
@@ -15,10 +21,65 @@ export interface FaqTopic {
 }
 
 export const SLIDES: Slide[] = [
-  { src: '/images/abuja-aso-rock.jpg', alt: 'Aso Rock rising above Abuja', caption: 'Aso Rock, Abuja' },
-  { src: '/images/abuja-cbd.jpg', alt: 'The Central Business District skyline', caption: 'Central Business District' },
-  { src: '/images/abuja-national-mosque.jpg', alt: 'The Abuja National Mosque', caption: 'National Mosque, Abuja' },
-  { src: '/images/bridge.jpg', alt: 'A suspension bridge over calm water', caption: 'From our desk to yours' }
+  {
+    src: '/images/abuja-aso-rock.jpg',
+    srcSm: '/images/abuja-aso-rock-sm.jpg',
+    alt: 'Aso Rock under a storm sky, with traffic on the road below',
+    city: 'Abuja',
+    caption: 'Aso Rock',
+    focus: '45% 40%',
+    // credit: { author: 'Uzoma Ozurumba', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Aso_Rock_view.jpg' }
+  },
+  {
+    src: '/images/lagos-victoria-island.jpg',
+    srcSm: '/images/lagos-victoria-island-sm.jpg',
+    alt: 'Aerial view of the Victoria Island waterfront and lagoon',
+    city: 'Lagos',
+    caption: 'Victoria Island',
+    focus: '45% 60%',
+    // credit: {
+    //   author: 'Ayorinde Ogundele',
+    //   license: 'CC BY-SA 4.0',
+    //   // url: 'https://commons.wikimedia.org/wiki/File:Aerial_view_of_victoria_island_in_Lagos,_Nigeria_with_habours_for_yatches.jpg'
+    // }
+  },
+  {
+    src: '/images/abuja-national-mosque.jpg',
+    srcSm: '/images/abuja-national-mosque-sm.jpg',
+    alt: 'The golden dome and minarets of the Abuja National Mosque',
+    city: 'Abuja',
+    caption: 'National Mosque',
+    focus: '60% 50%',
+    // credit: { author: 'Mark Fischer', license: 'CC BY-SA 2.0', url: 'https://commons.wikimedia.org/wiki/File:Abuja_National_Mosque.jpg' }
+  },
+  {
+    src: '/images/lagos-third-mainland.jpg',
+    srcSm: '/images/lagos-third-mainland-sm.jpg',
+    alt: 'Beneath the Third Mainland Bridge, a canoe on the lagoon',
+    city: 'Lagos',
+    caption: 'Third Mainland Bridge',
+    focus: '35% 60%',
+    // credit: { author: 'S. Aderogba', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Third-mainland-bridge-lagos.jpg' }
+  },
+  {
+    src: '/images/lagos-lekki-ikoyi.jpg',
+    srcSm: '/images/lagos-lekki-ikoyi-sm.jpg',
+    alt: 'The cable-stayed tower of the Lekki–Ikoyi Link Bridge',
+    city: 'Lagos',
+    caption: 'Lekki–Ikoyi Link Bridge',
+    focus: '45% 50%',
+    // credit: { author: 'Chippla', license: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:Lekki_Ikoyi_Link_Bridge.jpg' }
+  },
+  // {
+  //   src: '/images/lagos-island.jpg',
+  //   srcSm: '/images/lagos-island-sm.jpg',
+  //   alt: 'Looking over Lagos Island, the Central Mosque and the business district',
+  //   city: 'Lagos',
+  //   caption: 'Lagos Island',
+  //   focus: '40% 50%',
+  //   // credit: { author: 'Sir Demo', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:LAGOS_ISLAND_1.jpg' }
+  // },
+  // { src: '/images/bridge.jpg', alt: 'A suspension bridge over calm water', city: 'Tesseract', caption: 'From our desk to yours' }
 ];
 
 export const SERVICES: TitledText[] = [

@@ -5,9 +5,12 @@ import { Hero } from '../components/Hero';
 import { Faq } from '../components/Faq';
 import { ConsultationForm } from '../components/ConsultationForm';
 import { Icon } from '../components/Icons';
+import { useReveal } from '../lib/useReveal';
 import { SERVICES, INSTITUTIONS, COMMITMENTS, JOURNEY, CONTACT } from '../content/site';
 
 export default function Home() {
+  useReveal();
+
   return (
     <>
       <SiteHeader overlay />
@@ -16,8 +19,8 @@ export default function Home() {
 
         <section className="section" aria-labelledby="about-title">
           <div className="container split">
-            <p className="section-name">Who we are</p>
-            <div className="stack-lg">
+            <p className="section-name reveal">Who we are</p>
+            <div className="stack-lg reveal">
               <h2 id="about-title" className="statement">
                 Tesseract Prints is a discreet document partner for organisations whose paperwork carries legal, commercial or diplomatic
                 weight. We produce, seal and deliver what matters, and leave nothing behind.
@@ -32,7 +35,7 @@ export default function Home() {
 
         <section className="section section--dark" aria-labelledby="express-title" id="express">
           <div className="container express">
-            <div>
+            <div className="reveal">
               <p className="section-name">Express printing</p>
               <h2 id="express-title" className="display" style={{ marginTop: 28 }}>
                 One document, printed and at your door today.
@@ -52,7 +55,7 @@ export default function Home() {
                 <span>Private tracking link</span>
               </div>
             </div>
-            <ol className="express__steps">
+            <ol className="express__steps reveal reveal-group">
               <li>
                 <h3>Upload your document</h3>
                 <p>PDF, Word or image files, encrypted the moment they leave your device.</p>
@@ -71,7 +74,7 @@ export default function Home() {
 
         <section className="section section--paper" id="services" aria-labelledby="services-title">
           <div className="container">
-            <div className="split">
+            <div className="split reveal">
               <p className="section-name">Services</p>
               <div>
                 <h2 id="services-title" className="display">
@@ -79,7 +82,7 @@ export default function Home() {
                 </h2>
               </div>
             </div>
-            <div className="services">
+            <div className="services reveal reveal-group">
               {SERVICES.map((s) => (
                 <article key={s.title} className="service">
                   <h3>{s.title}</h3>
@@ -92,17 +95,17 @@ export default function Home() {
 
         <section className="section" id="institutions" aria-labelledby="inst-title">
           <div className="container split">
-            <div>
+            <div className="reveal">
               <p className="section-name">Institutions</p>
             </div>
-            <div className="stack-lg">
+            <div className="stack-lg reveal">
               <h2 id="inst-title" className="display">
                 Where discretion is not optional.
               </h2>
               <p className="body-lg">
                 We work with a deliberately limited number of institutions so that each one receives the attention its documents deserve.
               </p>
-              <div className="roster">
+              <div className="roster reveal reveal-group">
                 {INSTITUTIONS.map((i) => (
                   <div key={i.name} className="roster__row">
                     <h3>{i.name}</h3>
@@ -114,12 +117,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section section--dark" id="governance" aria-labelledby="gov-title">
+        <section className="section" id="governance" aria-labelledby="gov-title">
           <div className="container governance">
-            <div className="governance__image">
+            <div className="governance__image reveal">
               <img src="/images/bridge.jpg" alt="" loading="lazy" />
             </div>
-            <div>
+            <div className="reveal">
               <p className="section-name">Governance</p>
               <h2 id="gov-title" className="display" style={{ marginTop: 28 }}>
                 An unbroken chain of custody.
@@ -128,7 +131,7 @@ export default function Home() {
                 Our controls follow the discipline financial institutions apply to client assets: clear accountability, minimal access and a
                 record of every step.
               </p>
-              <div className="commitments">
+              <div className="commitments reveal reveal-group">
                 {COMMITMENTS.map((c) => (
                   <div key={c.title}>
                     <h3>{c.title}</h3>
@@ -142,13 +145,13 @@ export default function Home() {
 
         <section className="section" id="engagement" aria-labelledby="eng-title">
           <div className="container">
-            <div className="split">
+            <div className="split reveal">
               <p className="section-name">How we engage</p>
               <h2 id="eng-title" className="display">
                 A considered relationship, not a transaction.
               </h2>
             </div>
-            <ol className="journey">
+            <ol className="journey reveal reveal-group">
               {JOURNEY.map((j) => (
                 <li key={j.title}>
                   <h3>{j.title}</h3>
@@ -160,14 +163,14 @@ export default function Home() {
         </section>
 
         <section className="section section--paper" id="faq" aria-label="Frequently asked questions">
-          <div className="container">
+          <div className="container reveal">
             <Faq />
           </div>
         </section>
 
-        <section className="section section--accent" id="contact" aria-labelledby="contact-title">
+        <section className="section section--white" id="contact" aria-labelledby="contact-title">
           <div className="container consult">
-            <div>
+            <div className="reveal">
               <p className="section-name">Consultation</p>
               <h2 id="contact-title" className="display" style={{ marginTop: 28 }}>
                 Let us take care of it.
@@ -185,7 +188,9 @@ export default function Home() {
                 </span>
               </div>
             </div>
-            <ConsultationForm />
+            <div className="reveal">
+              <ConsultationForm />
+            </div>
           </div>
         </section>
       </main>
