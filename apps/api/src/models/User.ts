@@ -1,13 +1,15 @@
-import { Schema, model, type HydratedDocument, type Model, type Types } from 'mongoose';
+import { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { ROLES, type PublicUser, type Role } from '@tesseract/shared';
+import { transformOutput, uuidId, uuidRef } from './schema.js';
 
 export interface IUser {
+  _id: string;
   name: string;
   email: string;
   passwordHash: string;
   role: Role;
-  organization: Types.ObjectId | null;
+  organization: string | null;
   active: boolean;
   lastLoginAt?: Date;
   createdAt: Date;
@@ -25,15 +27,16 @@ export type UserDocument = HydratedDocument<IUser, IUserMethods>;
 
 const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
+    _id: uuidId,
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ROLES, required: true },
-    organization: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
+    organization: { ...uuidRef('Organization'), default: null },
     active: { type: Boolean, default: true },
     lastLoginAt: Date
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { transform: transformOutput('passwordHash') } }
 );
 
 userSchema.method('setPassword', async function setPassword(this: UserDocument, password: string) {
@@ -46,11 +49,11 @@ userSchema.method('verifyPassword', function verifyPassword(this: UserDocument, 
 
 userSchema.method('toPublic', function toPublic(this: UserDocument): PublicUser {
   return {
-    id: this._id.toString(),
+    id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
-    organization: this.organization ? this.organization.toString() : null,
+    organization: this.organization ?? null,
     lastLoginAt: this.lastLoginAt?.toISOString()
   };
 });

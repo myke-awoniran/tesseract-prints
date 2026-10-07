@@ -1,5 +1,4 @@
 import type { FastifyInstance } from 'fastify';
-import type { Types } from 'mongoose';
 import type { LoginRequest, LoginResponse, OrganizationSummary, SessionResponse } from '@tesseract/shared';
 import { User } from '../models/User.js';
 import { Organization } from '../models/Organization.js';
@@ -7,10 +6,10 @@ import { requireUser } from '../lib/request.js';
 
 const INVALID = 'That email and password combination is not recognised.';
 
-async function organizationSummary(id: Types.ObjectId | null): Promise<OrganizationSummary | null> {
+async function organizationSummary(id: string | null): Promise<OrganizationSummary | null> {
   if (!id) return null;
   const org = await Organization.findById(id);
-  return org ? { id: org._id.toString(), name: org.name } : null;
+  return org ? { id: org._id, name: org.name } : null;
 }
 
 export default async function authRoutes(app: FastifyInstance) {
@@ -33,7 +32,7 @@ export default async function authRoutes(app: FastifyInstance) {
       }
       user.lastLoginAt = new Date();
       await user.save();
-      const token = app.jwt.sign({ sub: user._id.toString(), role: user.role });
+      const token = app.jwt.sign({ sub: user._id, role: user.role });
       const body: LoginResponse = { token, user: user.toPublic(), organization: await organizationSummary(user.organization) };
       return body;
     }

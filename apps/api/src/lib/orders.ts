@@ -1,5 +1,5 @@
 import type { FastifyRequest } from 'fastify';
-import { Types } from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import { PDFDocument } from 'pdf-lib';
 import {
   FILE_TTL_SECONDS,
@@ -148,7 +148,7 @@ export async function createOrder(input: {
   fields: Fields;
   upload: Upload | null;
   channel: OrderChannel;
-  organization?: Types.ObjectId | null;
+  organization?: string | null;
   user?: UserDocument | null;
 }): Promise<{ order: OrderDocument; accessToken: string }> {
   const { fields, upload, channel, organization = null, user = null } = input;
@@ -179,7 +179,7 @@ export async function createOrder(input: {
   };
   const quote = computeQuote({ ...options, zone: zone.id });
 
-  const orderId = new Types.ObjectId();
+  const orderId = randomUUID();
   const stored = await storeEncryptedFile({ orderId, name: upload.name, mime: upload.mime, buffer: upload.buffer });
   const fileExpiresAt = new Date(stored.createdAt.getTime() + FILE_TTL_SECONDS * 1000);
 
@@ -187,7 +187,7 @@ export async function createOrder(input: {
   const firstStatus: OrderStatus = isEnterprise ? 'queued' : 'awaiting_payment';
   const accessToken = randomToken();
 
-  const base: Omit<IOrder, 'ref' | 'createdAt' | 'updatedAt'> & { _id: Types.ObjectId } = {
+  const base: Omit<IOrder, 'ref' | 'createdAt' | 'updatedAt'> & { _id: string } = {
     _id: orderId,
     channel,
     organization,
@@ -233,7 +233,7 @@ export async function findOrderByToken(ref: string, token: string, extraSelect =
 }
 
 /** Marks an express order paid exactly once, even if the webhook and the return page race. */
-export async function markPaid(orderId: Types.ObjectId, provider: string): Promise<void> {
+export async function markPaid(orderId: string, provider: string): Promise<void> {
   await Order.updateOne(
     { _id: orderId, 'payment.status': { $ne: 'paid' }, status: 'awaiting_payment' },
     {
@@ -281,7 +281,7 @@ export async function advanceStatus(
   order.timeline.push({ status: next, note, at: new Date() });
   if (next === 'delivered') order.deliveredAt = new Date();
 
-  const logs: Omit<IAccessLog, 'at'>[] = [
+  const logs: Omit<IAccessLog, '_id' | 'at'>[] = [
     { order: order._id, user: user?._id ?? null, action: 'status_changed', detail: `${current} → ${next}`, ip }
   ];
   if ((next === 'delivered' || next === 'cancelled') && order.file?.id && !order.fileDeletedAt) {

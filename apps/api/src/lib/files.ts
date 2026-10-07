@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import { config } from '../config.js';
 import { encryptBuffer, decryptBuffer } from './crypto.js';
 import { StoredFile, type StoredFileDocument } from '../models/StoredFile.js';
@@ -15,7 +15,7 @@ export interface DecryptedFile {
 
 /** Encrypts a document with AES-256-GCM and stores it in chunks that expire after 24 hours. */
 export async function storeEncryptedFile(input: {
-  orderId: Types.ObjectId;
+  orderId: string;
   name: string;
   mime: string;
   buffer: Buffer;
@@ -23,7 +23,7 @@ export async function storeEncryptedFile(input: {
   const { iv, authTag, ciphertext } = encryptBuffer(input.buffer, config.fileKey);
   const chunkCount = Math.max(1, Math.ceil(ciphertext.length / CHUNK_BYTES));
   const createdAt = new Date();
-  const fileId = new Types.ObjectId();
+  const fileId = randomUUID();
 
   const chunks = Array.from({ length: chunkCount }, (_, n) => ({
     file: fileId,
@@ -52,7 +52,7 @@ export async function storeEncryptedFile(input: {
 }
 
 /** Returns the decrypted document, or null when it has expired or been erased. */
-export async function readDecryptedFile(fileId: Types.ObjectId | undefined): Promise<DecryptedFile | null> {
+export async function readDecryptedFile(fileId: string | undefined): Promise<DecryptedFile | null> {
   if (!fileId) return null;
   const file = await StoredFile.findById(fileId);
   if (!file) return null;
@@ -64,7 +64,7 @@ export async function readDecryptedFile(fileId: Types.ObjectId | undefined): Pro
 }
 
 /** Erases a document immediately (on delivery or cancellation, ahead of the TTL). */
-export async function destroyFile(fileId: Types.ObjectId | undefined): Promise<void> {
+export async function destroyFile(fileId: string | undefined): Promise<void> {
   if (!fileId) return;
   await Promise.all([FileChunk.deleteMany({ file: fileId }), StoredFile.deleteOne({ _id: fileId })]);
 }

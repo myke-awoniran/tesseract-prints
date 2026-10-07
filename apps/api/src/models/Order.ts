@@ -1,4 +1,4 @@
-import { Schema, model, type HydratedDocument, type Types } from 'mongoose';
+import { Schema, model, type HydratedDocument } from 'mongoose';
 import {
   FINISHING_IDS,
   ORDER_STATUS_IDS,
@@ -10,6 +10,7 @@ import {
   type Quote,
   type ZoneId
 } from '@tesseract/shared';
+import { transformOutput, uuidId, uuidRef } from './schema.js';
 
 export interface TimelineEntry {
   status: OrderStatus;
@@ -18,10 +19,11 @@ export interface TimelineEntry {
 }
 
 export interface IOrder {
+  _id: string;
   ref: string;
   channel: OrderChannel;
-  organization: Types.ObjectId | null;
-  createdBy: Types.ObjectId | null;
+  organization: string | null;
+  createdBy: string | null;
   title: string;
   customer: { name: string; email: string; phone: string };
   delivery: { recipientName: string; address: string; area: string; zone: ZoneId; instructions: string };
@@ -30,7 +32,7 @@ export interface IOrder {
   payment: { status: PaymentStatus; provider?: string | null; reference?: string | null; paidAt?: Date };
   status: OrderStatus;
   timeline: TimelineEntry[];
-  file: { id?: Types.ObjectId; name?: string; mime?: string; size?: number };
+  file: { id?: string; name?: string; mime?: string; size?: number };
   fileExpiresAt?: Date;
   fileDeletedAt?: Date;
   handoverCode?: string;
@@ -42,10 +44,11 @@ export interface IOrder {
 
 const orderSchema = new Schema<IOrder>(
   {
+    _id: uuidId,
     ref: { type: String, required: true, unique: true },
     channel: { type: String, enum: ['express', 'enterprise'], required: true },
-    organization: { type: Schema.Types.ObjectId, ref: 'Organization', default: null },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    organization: { ...uuidRef('Organization'), default: null },
+    createdBy: { ...uuidRef('User'), default: null },
     title: { type: String, trim: true, default: '' },
 
     customer: {
@@ -93,7 +96,7 @@ const orderSchema = new Schema<IOrder>(
       }
     ],
     file: {
-      id: { type: Schema.Types.ObjectId, ref: 'StoredFile' },
+      id: uuidRef('StoredFile'),
       name: String,
       mime: String,
       size: Number
@@ -104,7 +107,7 @@ const orderSchema = new Schema<IOrder>(
     accessTokenHash: { type: String, select: false },
     deliveredAt: Date
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { transform: transformOutput('accessTokenHash', 'handoverCode') } }
 );
 
 orderSchema.index({ organization: 1, createdAt: -1 });

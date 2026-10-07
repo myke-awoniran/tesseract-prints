@@ -1,5 +1,4 @@
 import crypto from 'node:crypto';
-import type { Types } from 'mongoose';
 import type { Role } from '@tesseract/shared';
 import { connectDb, disconnectDb } from '../db.js';
 import { Organization } from '../models/Organization.js';
@@ -20,7 +19,7 @@ if (!org) {
   });
 }
 
-async function upsertUser(input: { email: string; name: string; role: Role; organization: Types.ObjectId | null }) {
+async function upsertUser(input: { email: string; name: string; role: Role; organization: string | null }) {
   let user = await User.findOne({ email: input.email });
   if (!user) user = new User(input);
   user.role = input.role;

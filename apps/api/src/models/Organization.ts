@@ -1,7 +1,9 @@
 import { Schema, model, type HydratedDocument } from 'mongoose';
 import { FINISHING_IDS, type DefaultDelivery, type OrganizationPreferences, type OrganizationView } from '@tesseract/shared';
+import { transformOutput, uuidId } from './schema.js';
 
 export interface IOrganization {
+  _id: string;
   name: string;
   billingEmail?: string;
   defaultDelivery: DefaultDelivery;
@@ -12,6 +14,7 @@ export interface IOrganization {
 
 const organizationSchema = new Schema<IOrganization>(
   {
+    _id: uuidId,
     name: { type: String, required: true, trim: true },
     billingEmail: { type: String, trim: true, lowercase: true },
     defaultDelivery: {
@@ -27,7 +30,7 @@ const organizationSchema = new Schema<IOrganization>(
       defaultColour: { type: String, enum: ['mono', 'colour'], default: 'mono' }
     }
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { transform: transformOutput() } }
 );
 
 export type OrganizationDocument = HydratedDocument<IOrganization>;
@@ -35,7 +38,7 @@ export const Organization = model<IOrganization>('Organization', organizationSch
 
 export function toOrganizationView(org: OrganizationDocument): OrganizationView {
   return {
-    id: org._id.toString(),
+    id: org._id,
     name: org.name,
     billingEmail: org.billingEmail ?? '',
     defaultDelivery: {

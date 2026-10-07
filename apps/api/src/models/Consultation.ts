@@ -1,6 +1,8 @@
 import { Schema, model } from 'mongoose';
+import { transformOutput, uuidId } from './schema.js';
 
 export interface IConsultation {
+  _id: string;
   name: string;
   institution: string;
   email: string;
@@ -14,6 +16,7 @@ export interface IConsultation {
 
 const consultationSchema = new Schema<IConsultation>(
   {
+    _id: uuidId,
     name: { type: String, required: true, trim: true },
     institution: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
@@ -22,7 +25,7 @@ const consultationSchema = new Schema<IConsultation>(
     message: { type: String, trim: true, default: '' },
     status: { type: String, enum: ['new', 'contacted', 'closed'], default: 'new' }
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { transform: transformOutput() } }
 );
 
 export const Consultation = model<IConsultation>('Consultation', consultationSchema);
