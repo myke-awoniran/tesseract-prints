@@ -1,0 +1,29 @@
+{
+  "name": "tesseract-prints",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tesseract Prints — confidential document printing and delivery. TypeScript monorepo: Fastify + MongoDB API, React web app, shared domain package.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run build -w @tesseract/shared",
+    "dev": "concurrently -n shared,api,web -c gray,magenta,blue \"npm run dev -w @tesseract/shared\" \"npm run dev -w @tesseract/api\" \"npm run dev -w @tesseract/web\"",
+    "dev:api": "npm run dev -w @tesseract/api",
+    "dev:web": "npm run dev -w @tesseract/web",
+    "build": "npm run build -w @tesseract/shared && npm run build -w @tesseract/api && npm run build -w @tesseract/web",
+    "typecheck": "npm run build -w @tesseract/shared && npm run typecheck -w @tesseract/api && npm run typecheck -w @tesseract/web",
+    "start": "npm run start -w @tesseract/api",
+    "seed": "npm run seed -w @tesseract/api",
+    "db:up": "docker compose up -d mongo",
+    "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
