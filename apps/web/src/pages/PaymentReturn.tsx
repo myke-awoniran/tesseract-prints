@@ -4,8 +4,11 @@ import { SiteHeader } from '../components/SiteHeader';
 import { SiteFooter } from '../components/SiteFooter';
 import { SealStamp } from '../components/SealStamp';
 import { PayNowButton, expressPayPath } from '../components/PayNowButton';
-import { Link, useQuery } from '../lib/router';
-import { api, getToken, recallExpressToken, recallInvoiceToken, errorMessage } from '../lib/api';
+import { Link, useQuery, useRouter } from '../lib/router';
+import { api, getToken, recallExpressToken, recallInvoiceToken, recallLatestExpressOrder, errorMessage } from '../lib/api';
+
+// A checkout is valid for an hour; allow a little longer for the customer to come back.
+const RECENT_ORDER_MS = 2 * 60 * 60 * 1000;
 
 type ReturnState =
   | { status: 'checking' }
@@ -14,6 +17,7 @@ type ReturnState =
 
 export default function PaymentReturn() {
   const query = useQuery();
+  const { navigate } = useRouter();
   // Bachs returns with checkout_id; Paystack, the mock and our cancel link carry reference.
   const checkoutId = query.get('checkout_id');
   const reference = query.get('reference') || query.get('trxref');
@@ -24,7 +28,17 @@ export default function PaymentReturn() {
     let stopped = false;
     async function verify(attempt = 0): Promise<void> {
       if (!checkoutId && !reference) {
-        setState({ status: 'error', message: 'This page needs a payment reference. Open it from the payment confirmation.' });
+        // The gateway came back without identifying the payment. The tracking page checks the
+        // gateway itself, so send the customer to the order they just placed on this device.
+        const recent = recallLatestExpressOrder(RECENT_ORDER_MS);
+        if (recent) {
+          navigate(`/track/${recent.ref}?t=${recent.token}`, { replace: true });
+          return;
+        }
+        setState({
+          status: 'error',
+          message: 'This page needs a payment reference. Open your order from the tracking link we emailed you to see its payment status.'
+        });
         return;
       }
       try {
@@ -44,7 +58,7 @@ export default function PaymentReturn() {
     return () => {
       stopped = true;
     };
-  }, [checkoutId, reference, cancelled]);
+  }, [checkoutId, reference, cancelled, navigate]);
 
   const ref = 'ref' in state ? state.ref : null;
   const isInvoice = 'kind' in state && state.kind === 'invoice';

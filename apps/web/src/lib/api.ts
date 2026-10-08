@@ -151,6 +151,15 @@ export function recallExpressToken(ref: string): string | null {
   return readExpressStore()[ref]?.token ?? null;
 }
 
+/** The express order most recently placed on this device, if it was placed in the last `withinMs`. */
+export function recallLatestExpressOrder(withinMs: number): { ref: string; token: string } | null {
+  let latest: { ref: string; token: string; savedAt: number } | null = null;
+  for (const [ref, entry] of Object.entries(readExpressStore())) {
+    if (!latest || entry.savedAt > latest.savedAt) latest = { ref, ...entry };
+  }
+  return latest && Date.now() - latest.savedAt <= withinMs ? { ref: latest.ref, token: latest.token } : null;
+}
+
 // Whoever opens an invoice from its email link keeps the link on this device, to find it again after paying.
 const INVOICE_KEY = 'tesseract.invoices';
 
