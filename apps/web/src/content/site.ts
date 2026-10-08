@@ -22,14 +22,6 @@ export interface FaqTopic {
 
 export const SLIDES: Slide[] = [
   {
-    src: '/images/abuja-aso-villa.jpg',
-    srcSm: '/images/abuja-aso-villa-sm.jpg',
-    alt: 'The Presidential Villa and its gardens at the foot of Aso Rock',
-    city: 'Abuja',
-    caption: 'Presidential Villa',
-    focus: '50% 62%'
-  },
-  {
     src: '/images/abuja-city-gate.jpg',
     srcSm: '/images/abuja-city-gate-sm.jpg',
     alt: 'The white arches of the Abuja City Gate, with the Nigerian flag flying between them',

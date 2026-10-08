@@ -1,8 +1,11 @@
-import { useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react';
 import {
   ZONES,
   FINISHING,
   PAPER_SIZES,
+  PAPER_TYPES,
+  paperTypeLabel,
+  type PaperType,
   computeQuote,
   PRICING,
   zoneForArea,
@@ -32,11 +35,13 @@ interface ExpressForm {
   colour: Colour;
   sides: Sides;
   paperSize: PaperSize;
+  paperType: PaperType;
   finishing: FinishingId;
   name: string;
   email: string;
   phone: string;
   recipientName: string;
+  recipientPhone: string;
   area: string;
   address: string;
   instructions: string;
@@ -57,11 +62,13 @@ const INITIAL: ExpressForm = {
   colour: 'mono',
   sides: 'double',
   paperSize: 'A4',
+  paperType: 'standard',
   finishing: 'none',
   name: '',
   email: '',
   phone: '',
   recipientName: '',
+  recipientPhone: '',
   area: '',
   address: '',
   instructions: ''
@@ -85,8 +92,11 @@ function validateStep(step: number, file: File | null, f: ExpressForm): Errors {
     if (f.name.trim().length < 2) e.name = 'Enter your full name.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = 'Enter a valid email address.';
     if (!/^\+?[0-9 ()-]{7,20}$/.test(f.phone.trim())) e.phone = 'Enter a valid phone number.';
+    if (f.recipientName.trim().length < 2) e.recipientName = 'Enter the name of the person receiving the documents.';
+    if (!/^\+?[0-9 ()-]{7,20}$/.test(f.recipientPhone.trim())) e.recipientPhone = 'Enter the recipient’s phone number, so the rider can reach them.';
     if (!zoneForArea(f.area)) e.area = 'Choose your area.';
     if (f.address.trim().length < 6) e.address = 'Enter the full delivery address.';
+    if (f.instructions.trim().length < 3) e.instructions = 'Add directions for the rider: a landmark, gate, floor or office.';
   }
   return e;
 }
@@ -133,6 +143,7 @@ export default function Express() {
   const [file, setFile] = useState<File | null>(null);
   const [detectedPages, setDetectedPages] = useState<number | null>(null);
   const [form, setForm] = useState<ExpressForm>(INITIAL);
+  const [selfRecipient, setSelfRecipient] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [created, setCreated] = useState<CreatedOrder | null>(null);
   const [busy, setBusy] = useState<'' | 'uploading' | 'paying'>('');
@@ -144,6 +155,11 @@ export default function Express() {
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
   const zone = zoneForArea(form.area);
+
+  // "I'm the recipient" keeps the recipient's name and phone in step with the customer's own.
+  useEffect(() => {
+    if (selfRecipient) setForm((f) => (f.recipientName === f.name && f.recipientPhone === f.phone ? f : { ...f, recipientName: f.name, recipientPhone: f.phone }));
+  }, [selfRecipient, form.name, form.phone]);
   const isPdf = file?.type === 'application/pdf';
 
   const estimate = useMemo(() => {
@@ -154,6 +170,7 @@ export default function Express() {
       colour: form.colour,
       sides: form.sides,
       paperSize: form.paperSize,
+      paperType: form.paperType,
       finishing: form.finishing,
       pages,
       copies: Number(form.copies) || 1,
@@ -203,7 +220,7 @@ export default function Express() {
       if (fieldErrors) {
         setErrors(fieldErrors);
         if (fieldErrors.file || fieldErrors.pages) setStep(0);
-        else if (fieldErrors.copies) setStep(1);
+        else if (fieldErrors.copies || fieldErrors.paperType || fieldErrors.paperSize) setStep(1);
         else setStep(2);
       }
     }
@@ -307,6 +324,14 @@ export default function Express() {
                       ))}
                     </div>
                   </fieldset>
+                  <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+                    <legend>Paper</legend>
+                    <div className="choice-row" style={{ marginTop: 8 }}>
+                      {PAPER_TYPES.map((p) => (
+                        <Choice key={p.id} name="paperType" value={p.id} checked={form.paperType === p.id} onChange={set('paperType')} label={p.label} note={p.note} />
+                      ))}
+                    </div>
+                  </fieldset>
                   <div className="form-grid">
                     <Field id="paper" label="Paper size">
                       <select id="paper" className="input" value={form.paperSize} onChange={set('paperSize')}>
@@ -339,8 +364,18 @@ export default function Express() {
                       <input id="email" className="input" type="email" autoComplete="email" value={form.email} onChange={set('email')} aria-invalid={Boolean(errors.email)} />
                     </Field>
                   </div>
-                  <Field id="recipient" label="Recipient (if not you)">
-                    <input id="recipient" className="input" value={form.recipientName} onChange={set('recipientName')} />
+                  <div className="span-2 delivery-split">
+                    <h3>Who receives it</h3>
+                    <label className="check-line">
+                      <input type="checkbox" checked={selfRecipient} onChange={(e) => setSelfRecipient(e.target.checked)} />
+                      <span>I’m the recipient</span>
+                    </label>
+                  </div>
+                  <Field id="recipient" label="Recipient’s full name" error={errors.recipientName}>
+                    <input id="recipient" className="input" value={form.recipientName} onChange={set('recipientName')} readOnly={selfRecipient} required aria-invalid={Boolean(errors.recipientName)} />
+                  </Field>
+                  <Field id="recipient-phone" label="Recipient’s phone" hint="The rider calls this number on arrival." error={errors.recipientPhone}>
+                    <input id="recipient-phone" className="input" type="tel" value={form.recipientPhone} onChange={set('recipientPhone')} readOnly={selfRecipient} required aria-invalid={Boolean(errors.recipientPhone)} />
                   </Field>
                   <Field id="area" label="Area" hint={deliveryEta ? `Delivery: ${deliveryEta.toLowerCase()}` : undefined} error={errors.area}>
                     <select id="area" className="input" value={form.area} onChange={set('area')} aria-invalid={Boolean(errors.area)}>
@@ -360,8 +395,8 @@ export default function Express() {
                     </Field>
                   </div>
                   <div className="span-2">
-                    <Field id="instructions" label="Delivery notes (optional)" hint="Gate, floor or a time that suits you.">
-                      <textarea id="instructions" className="input" rows={3} maxLength={500} value={form.instructions} onChange={set('instructions')} />
+                    <Field id="instructions" label="Directions for the rider" hint="A landmark, gate colour, floor or office, and a time that suits." error={errors.instructions}>
+                      <textarea id="instructions" className="input" rows={3} maxLength={500} value={form.instructions} onChange={set('instructions')} required aria-invalid={Boolean(errors.instructions)} />
                     </Field>
                   </div>
                 </div>
@@ -386,14 +421,16 @@ export default function Express() {
                       <dt>Printing</dt>
                       <dd>
                         {form.copies} {Number(form.copies) === 1 ? 'copy' : 'copies'} · {form.colour === 'colour' ? 'Colour' : 'Black and white'} ·{' '}
-                        {form.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {form.paperSize} · {finishingLabel(form.finishing)}
+                        {form.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {form.paperSize} · {paperTypeLabel(form.paperType)} · {finishingLabel(form.finishing)}
                       </dd>
                       {!created && <button type="button" className="text-link" style={{ background: 'none', borderTop: 0, borderLeft: 0, borderRight: 0 }} onClick={() => setStep(1)}>Change</button>}
                     </div>
                     <div>
                       <dt>Deliver to</dt>
                       <dd>
-                        {form.recipientName || form.name}, {form.address}, {form.area}
+                        {form.recipientName} ({form.recipientPhone}), {form.address}, {form.area}
+                        <br />
+                        <span className="form-note">{form.instructions}</span>
                       </dd>
                       {!created && <button type="button" className="text-link" style={{ background: 'none', borderTop: 0, borderLeft: 0, borderRight: 0 }} onClick={() => setStep(2)}>Change</button>}
                     </div>

@@ -151,14 +151,17 @@ export interface OrderEmailData {
   title: string;
   customerName: string;
   recipientName: string;
+  recipientPhone?: string;
   area: string;
   address?: string;
+  directions?: string;
   channel: 'express' | 'enterprise';
   pages: number;
   copies: number;
   colour: 'mono' | 'colour';
   sides: 'single' | 'double';
   paperSize: string;
+  paperType?: string;
   finishing: string;
   quote: Quote;
   paid: boolean;
@@ -171,7 +174,7 @@ export interface OrderEmailData {
 const first = (name: string) => esc(name.trim().split(/\s+/)[0] || 'there');
 
 function jobLine(o: OrderEmailData): string {
-  return `${o.pages} ${o.pages === 1 ? 'page' : 'pages'} × ${o.copies} ${o.copies === 1 ? 'copy' : 'copies'} · ${o.colour === 'colour' ? 'Colour' : 'Black & white'} · ${o.sides === 'double' ? 'Double-sided' : 'Single-sided'} · ${o.paperSize}`;
+  return `${o.pages} ${o.pages === 1 ? 'page' : 'pages'} × ${o.copies} ${o.copies === 1 ? 'copy' : 'copies'} · ${o.colour === 'colour' ? 'Colour' : 'Black & white'} · ${o.sides === 'double' ? 'Double-sided' : 'Single-sided'} · ${o.paperSize}${o.paperType === 'special' ? ' · Special paper' : ''}`;
 }
 
 function summaryRows(o: OrderEmailData, withMoney = true): string {
@@ -411,7 +414,8 @@ ${rows([
   ['Customer', esc(o.customerName)],
   ['Job', esc(jobLine(o))],
   ['Finishing', esc(finishingLabel(o.finishing))],
-  ['Deliver to', `${esc(o.recipientName)}<br>${esc(o.address ?? '')}<br><span style="color:${C.muted};font-weight:400;">${esc(o.area)}</span>`],
+  ['Deliver to', `${esc(o.recipientName)}${o.recipientPhone ? ` · <a href="tel:${esc(o.recipientPhone.replace(/[^\d+]/g, ''))}">${esc(o.recipientPhone)}</a>` : ''}<br>${esc(o.address ?? '')}<br><span style="color:${C.muted};font-weight:400;">${esc(o.area)}</span>`],
+  ['Directions', esc(o.directions || '—')],
   ['Value', `<strong>${esc(formatNaira(o.quote.total))}</strong> · ${o.channel === 'express' ? 'paid' : 'invoiced'}`]
 ])}
 ${button('Open in the print room', o.consoleUrl)}
@@ -575,6 +579,8 @@ export function sampleEmail(id: TemplateId, webUrl: string): RenderedEmail {
     recipientName: 'Amaka Okafor',
     area: 'Maitama',
     address: '14 Gana Street',
+    recipientPhone: '+234 803 555 0101',
+    directions: 'White gate opposite the filling station. Third floor, reception.',
     channel: 'express',
     pages: 48,
     copies: 3,

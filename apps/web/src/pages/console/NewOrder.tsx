@@ -3,10 +3,12 @@ import {
   ZONES,
   FINISHING,
   PAPER_SIZES,
+  PAPER_TYPES,
   type Colour,
   type FinishingId,
   type OrderResponse,
   type PaperSize,
+  type PaperType,
   type SettingsResponse,
   type Sides
 } from '@tesseract/shared';
@@ -22,6 +24,7 @@ interface NewOrderForm {
   colour: Colour;
   sides: Sides;
   paperSize: PaperSize;
+  paperType: PaperType;
   finishing: FinishingId;
   recipientName: string;
   phone: string;
@@ -39,6 +42,7 @@ const BLANK: NewOrderForm = {
   colour: 'mono',
   sides: 'double',
   paperSize: 'A4',
+  paperType: 'standard',
   finishing: 'none',
   recipientName: '',
   phone: '',
@@ -105,9 +109,11 @@ export default function NewOrder() {
     if (fileError) errs.file = fileError;
     if (file && file.type !== 'application/pdf' && !(Number(form.pages) >= 1)) errs.pages = 'Enter the number of pages.';
     if (!(Number(form.copies) >= 1)) errs.copies = 'Enter at least one copy.';
+    if (form.recipientName.trim().length < 2) errs.recipientName = 'Enter the name of the person receiving the documents.';
+    if (!/^\+?[0-9 ()-]{7,20}$/.test(form.phone.trim())) errs.phone = 'Enter the recipient’s phone number, so the rider can reach them.';
     if (!form.area) errs.area = 'Choose a delivery area.';
     if (form.address.trim().length < 6) errs.address = 'Enter the delivery address.';
-    if (!form.phone.trim()) errs.phone = 'Enter a contact number for the recipient.';
+    if (form.instructions.trim().length < 3) errs.instructions = 'Add directions for the rider: a landmark, gate, floor or office.';
     setErrors(errs);
     if (Object.keys(errs).length || !file) return;
 
@@ -124,7 +130,7 @@ export default function NewOrder() {
       setBusy(false);
       setError(errorMessage(err));
       const fieldErrors = err instanceof ApiError ? err.fieldErrors : null;
-      if (fieldErrors) setErrors(fieldErrors);
+      if (fieldErrors) setErrors({ ...fieldErrors, phone: fieldErrors.phone || fieldErrors.recipientPhone || '' });
     }
   }
 
@@ -193,6 +199,11 @@ export default function NewOrder() {
               <label>Finishing</label>
               <Seg name="finishing" value={form.finishing} onChange={(v) => setField('finishing', v)} options={FINISHING} />
             </div>
+            <div className="c-field">
+              <label>Paper</label>
+              <Seg name="paperType" value={form.paperType} onChange={(v) => setField('paperType', v)} options={PAPER_TYPES} />
+              <span className="hint">{PAPER_TYPES.find((p) => p.id === form.paperType)?.note}</span>
+            </div>
             <div className="c-form-grid">
               <div className="c-field">
                 <label htmlFor="paper">Paper size</label>
@@ -214,16 +225,17 @@ export default function NewOrder() {
         <section className="panel">
           <div className="panel__head">
             <h2>Delivery</h2>
-            <span>Prefilled from your organisation’s defaults</span>
+            <span>All fields required · prefilled from your organisation’s defaults</span>
           </div>
           <div className="c-form-grid">
             <div className="c-field">
-              <label htmlFor="recipient">Recipient</label>
-              <input id="recipient" className="c-input" value={form.recipientName} onChange={bind('recipientName')} />
+              <label htmlFor="recipient">Recipient’s full name</label>
+              <input id="recipient" className="c-input" value={form.recipientName} onChange={bind('recipientName')} required aria-invalid={Boolean(errors.recipientName)} />
+              {errors.recipientName && <span className="c-error">{errors.recipientName}</span>}
             </div>
             <div className="c-field">
-              <label htmlFor="phone">Recipient phone</label>
-              <input id="phone" className="c-input" type="tel" value={form.phone} onChange={bind('phone')} aria-invalid={Boolean(errors.phone)} />
+              <label htmlFor="phone">Recipient’s phone</label>
+              <input id="phone" className="c-input" type="tel" value={form.phone} onChange={bind('phone')} required aria-invalid={Boolean(errors.phone)} />
               {errors.phone && <span className="c-error">{errors.phone}</span>}
             </div>
             <div className="c-field">
@@ -246,8 +258,9 @@ export default function NewOrder() {
               {errors.address && <span className="c-error">{errors.address}</span>}
             </div>
             <div className="c-field span-2">
-              <label htmlFor="instructions">Instructions for the courier (optional)</label>
-              <textarea id="instructions" className="c-input" maxLength={500} value={form.instructions} onChange={bind('instructions')} />
+              <label htmlFor="instructions">Directions for the rider</label>
+              <textarea id="instructions" className="c-input" maxLength={500} value={form.instructions} onChange={bind('instructions')} required aria-invalid={Boolean(errors.instructions)} placeholder="A landmark, gate colour, floor or office" />
+              {errors.instructions && <span className="c-error">{errors.instructions}</span>}
             </div>
           </div>
         </section>

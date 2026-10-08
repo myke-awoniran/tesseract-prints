@@ -5,7 +5,6 @@ The hero slideshow reads its slides from `src/content/site.ts` (`SLIDES`). Each 
 
 | File | Subject | Photographer | Licence |
 | --- | --- | --- | --- |
-| `abuja-aso-villa.jpg` | Presidential Villa and Aso Rock, Abuja | Supplied by you | n/a |
 | `abuja-city-gate.jpg` | Abuja City Gate | Mr Trinity001 | CC BY-SA 4.0 |
 | `abuja-aso-rock.jpg` | Aso Rock, Abuja | Uzoma Ozurumba | CC BY-SA 4.0 |
 | `lagos-victoria-island.jpg` | Victoria Island, Lagos | Ayorinde Ogundele | CC BY-SA 4.0 |

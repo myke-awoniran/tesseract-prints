@@ -263,7 +263,7 @@ export function DeliverForm({ order, onDone }: { order: OrderView; onDone: (o: O
 
 /** One-line description of the print job. */
 export function jobSummary(o: OrderView): string {
-  return `${o.options.pages} pp × ${o.options.copies} · ${o.options.colour === 'colour' ? 'Colour' : 'B&W'} · ${o.options.sides === 'double' ? 'Duplex' : 'Simplex'} · ${o.options.paperSize}`;
+  return `${o.options.pages} pp × ${o.options.copies} · ${o.options.colour === 'colour' ? 'Colour' : 'B&W'} · ${o.options.sides === 'double' ? 'Duplex' : 'Simplex'} · ${o.options.paperSize}${o.options.paperType === 'special' ? ' · Special paper' : ''}`;
 }
 
 /** "3h 20m ago"-style age, for spotting slow jobs at a glance. */

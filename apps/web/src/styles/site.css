@@ -1993,3 +1993,34 @@ select.input {
     animation: none;
   }
 }
+
+/* Express delivery step: recipient block */
+.delivery-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin-top: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.delivery-split h3 {
+  font-size: 18px;
+  font-weight: 500;
+}
+.check-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15.5px;
+  cursor: pointer;
+}
+.check-line input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--aubergine);
+}
+.input[readonly] {
+  background: var(--whisper);
+}

@@ -66,6 +66,17 @@ export type Sides = 'single' | 'double';
 export const PAPER_SIZES = ['A4', 'A3', 'Letter'] as const;
 export type PaperSize = (typeof PAPER_SIZES)[number];
 
+export const PAPER_TYPES = [
+  { id: 'standard', label: 'Standard paper', note: '80gsm bright white office paper' },
+  { id: 'special', label: 'Special paper', note: 'Heavier premium stock for formal submissions' }
+] as const;
+export type PaperType = (typeof PAPER_TYPES)[number]['id'];
+export const PAPER_TYPE_IDS: readonly PaperType[] = PAPER_TYPES.map((p) => p.id);
+
+export function paperTypeLabel(id: string | undefined): string {
+  return PAPER_TYPES.find((p) => p.id === id)?.label ?? 'Standard paper';
+}
+
 export const FINISHING = [
   { id: 'none', label: 'No finishing' },
   { id: 'stapled', label: 'Stapled' },
@@ -84,6 +95,7 @@ export interface PrintOptions {
   colour: Colour;
   sides: Sides;
   paperSize: PaperSize;
+  paperType: PaperType;
   finishing: FinishingId;
   copies: number;
   pages: number;
@@ -156,6 +168,8 @@ export const PRICING = {
   perSideKobo: { mono: 10_000, colour: 30_000 } satisfies Record<Colour, number>,
   finishingPerCopyKobo: { none: 0, stapled: 20_000, spiral: 150_000, comb: 120_000, hardbound: 500_000 } satisfies Record<FinishingId, number>,
   paperMultiplier: { A4: 1, Letter: 1, A3: 2 } satisfies Record<PaperSize, number>,
+  /** Added per printed sheet, on top of the per-side rate (₦100 a sheet for special paper). */
+  paperTypePerSheetKobo: { standard: 0, special: 10_000 } satisfies Record<PaperType, number>,
   deliveryKobo: { central: 300_000, inner: 450_000, outer: 700_000 } satisfies Record<ZoneId, number>,
   sealingKobo: 50_000,
   /** Every order costs at least this much, delivery included (₦5,000). */
@@ -163,12 +177,13 @@ export const PRICING = {
 } as const;
 
 export function computeQuote(input: PrintOptions & { zone: ZoneId }): Quote {
-  const { pages, copies, colour, sides, finishing, paperSize, zone } = input;
-  const printing = Math.round(pages * copies * PRICING.perSideKobo[colour] * PRICING.paperMultiplier[paperSize]);
+  const { pages, copies, colour, sides, finishing, paperSize, paperType = 'standard', zone } = input;
+  const sheetsPerCopy = sides === 'double' ? Math.ceil(pages / 2) : pages;
+  const paperSurcharge = sheetsPerCopy * copies * (PRICING.paperTypePerSheetKobo[paperType] ?? 0) * PRICING.paperMultiplier[paperSize];
+  const printing = Math.round(pages * copies * PRICING.perSideKobo[colour] * PRICING.paperMultiplier[paperSize] + paperSurcharge);
   const finishingTotal = PRICING.finishingPerCopyKobo[finishing] * copies;
   const delivery = PRICING.deliveryKobo[zone];
   const sealing = PRICING.sealingKobo;
-  const sheetsPerCopy = sides === 'double' ? Math.ceil(pages / 2) : pages;
   const subtotal = printing + finishingTotal + delivery + sealing;
   const minimumTopUp = Math.max(0, PRICING.minimumOrderKobo - subtotal);
   return {

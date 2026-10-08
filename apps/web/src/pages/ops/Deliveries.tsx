@@ -16,9 +16,10 @@ function Address({ order }: { order: OrderView }) {
         {order.delivery.address}, {order.delivery.area}
       </span>
       {order.delivery.instructions && <em>“{order.delivery.instructions}”</em>}
-      {order.customer?.phone && (
-        <a href={`tel:${order.customer.phone.replace(/[^\d+]/g, '')}`}>
-          <Icon.Phone width={14} height={14} /> {order.customer.phone}
+      {(order.delivery.phone || order.customer?.phone) && (
+        <a href={`tel:${(order.delivery.phone || order.customer?.phone || '').replace(/[^\d+]/g, '')}`}>
+          <Icon.Phone width={14} height={14} /> {order.delivery.phone || order.customer?.phone}
+          {!order.delivery.phone && ' (customer)'}
         </a>
       )}
     </div>

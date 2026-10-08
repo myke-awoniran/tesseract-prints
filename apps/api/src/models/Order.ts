@@ -3,6 +3,7 @@ import {
   FINISHING_IDS,
   ORDER_STATUS_IDS,
   PAPER_SIZES,
+  PAPER_TYPE_IDS,
   type OrderChannel,
   type OrderStatus,
   type PaymentStatus,
@@ -40,7 +41,7 @@ export interface IOrder {
   createdBy: string | null;
   title: string;
   customer: { name: string; email: string; phone: string };
-  delivery: { recipientName: string; address: string; area: string; zone: ZoneId; instructions: string };
+  delivery: { recipientName: string; phone: string; address: string; area: string; zone: ZoneId; instructions: string };
   options: PrintOptions;
   quote: Quote;
   payment: { status: PaymentStatus; provider?: string | null; reference?: string | null; checkoutId?: string | null; paidAt?: Date };
@@ -78,6 +79,8 @@ const orderSchema = new Schema<IOrder>(
     },
     delivery: {
       recipientName: { type: String, trim: true, required: true },
+      // Required for new orders by validation; older orders predate it.
+      phone: { type: String, trim: true, default: '' },
       address: { type: String, trim: true, required: true },
       area: { type: String, trim: true, required: true },
       zone: { type: String, enum: ['central', 'inner', 'outer'], required: true },
@@ -87,6 +90,7 @@ const orderSchema = new Schema<IOrder>(
       colour: { type: String, enum: ['mono', 'colour'], required: true },
       sides: { type: String, enum: ['single', 'double'], required: true },
       paperSize: { type: String, enum: PAPER_SIZES, required: true },
+      paperType: { type: String, enum: PAPER_TYPE_IDS, default: 'standard' },
       finishing: { type: String, enum: FINISHING_IDS, required: true },
       copies: { type: Number, min: 1, required: true },
       pages: { type: Number, min: 1, required: true }

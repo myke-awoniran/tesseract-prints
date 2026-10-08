@@ -56,6 +56,8 @@ export interface OrderView {
   payment: { status: PaymentStatus; paidAt?: ISODateString; provider?: string };
   delivery: {
     recipientName: string;
+    /** The recipient's phone, for the rider. Shown to operators and account users. */
+    phone?: string;
     area: string;
     zone: ZoneId;
     address?: string;

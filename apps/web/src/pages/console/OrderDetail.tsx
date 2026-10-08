@@ -1,4 +1,4 @@
-import { FULFILMENT_FLOW, statusLabel, formatNaira, finishingLabel, type OrderResponse } from '@tesseract/shared';
+import { FULFILMENT_FLOW, statusLabel, formatNaira, finishingLabel, paperTypeLabel, type OrderResponse } from '@tesseract/shared';
 import { api } from '../../lib/api';
 import { Link, type RouteParams } from '../../lib/router';
 import { useAsync } from '../../lib/useAsync';
@@ -72,9 +72,9 @@ export default function OrderDetail({ params }: { params: RouteParams }) {
               </div>
               <dl className="kv">
                 <div><dt>Document</dt><dd>{order.file.name} {order.file.size ? `· ${formatBytes(order.file.size)}` : ''}</dd></div>
-                <div><dt>Printing</dt><dd>{order.options.pages} pages · {order.options.copies} {order.options.copies === 1 ? 'copy' : 'copies'} · {order.options.colour === 'colour' ? 'Colour' : 'Black and white'} · {order.options.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {order.options.paperSize}</dd></div>
+                <div><dt>Printing</dt><dd>{order.options.pages} pages · {order.options.copies} {order.options.copies === 1 ? 'copy' : 'copies'} · {order.options.colour === 'colour' ? 'Colour' : 'Black and white'} · {order.options.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {order.options.paperSize} · {paperTypeLabel(order.options.paperType)}</dd></div>
                 <div><dt>Finishing</dt><dd>{finishingLabel(order.options.finishing)}</dd></div>
-                <div><dt>Recipient</dt><dd>{order.delivery.recipientName}</dd></div>
+                <div><dt>Recipient</dt><dd>{order.delivery.recipientName}{order.delivery.phone ? ` · ${order.delivery.phone}` : ''}</dd></div>
                 <div><dt>Address</dt><dd>{order.delivery.address}, {order.delivery.area}</dd></div>
                 <div><dt>Amount</dt><dd>{formatNaira(order.quote.total)} · invoiced</dd></div>
                 <div><dt>Placed</dt><dd>{formatDate(order.createdAt)}</dd></div>

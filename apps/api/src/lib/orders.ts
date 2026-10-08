@@ -5,6 +5,7 @@ import {
   FILE_TTL_SECONDS,
   FINISHING_IDS,
   PAPER_SIZES,
+  PAPER_TYPE_IDS,
   FULFILMENT_FLOW,
   computeQuote,
   isAcceptedFileType,
@@ -16,6 +17,7 @@ import {
   type OrderStatus,
   type OrderView,
   type PaperSize,
+  type PaperType,
   type Sides
 } from '@tesseract/shared';
 import { Order, type IOrder, type OrderDocument } from '../models/Order.js';
@@ -73,12 +75,14 @@ export interface OrderFields {
   email: string;
   phone: string;
   recipientName: string;
+  recipientPhone: string;
   address: string;
   area: string;
   instructions: string;
   colour: Colour;
   sides: Sides;
   paperSize: PaperSize;
+  paperType: PaperType;
   finishing: FinishingId;
   copies: number;
   pages: number;
@@ -89,6 +93,7 @@ export function validateOrderFields(fields: Fields): { value: OrderFields; error
   const colour = oneOf(fields.colour, ['mono', 'colour'] as const);
   const sides = oneOf(fields.sides, ['single', 'double'] as const);
   const paperSize = oneOf(fields.paperSize, PAPER_SIZES);
+  const paperType = oneOf(fields.paperType || 'standard', PAPER_TYPE_IDS);
   const finishing = oneOf(fields.finishing, FINISHING_IDS);
   const copies = int(fields.copies);
   const pages = int(fields.pages);
@@ -97,20 +102,27 @@ export function validateOrderFields(fields: Fields): { value: OrderFields; error
   const phone = str(fields.phone, 24);
   const address = str(fields.address, 400);
   const area = str(fields.area, 80);
+  const recipientName = str(fields.recipientName, 120);
+  const recipientPhone = str(fields.recipientPhone, 24);
+  const instructions = str(fields.instructions, 500);
 
   if (!name) errors.name = 'Enter your full name.';
   if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address.';
   if (!PHONE_RE.test(phone)) errors.phone = 'Enter a valid phone number.';
+  if (recipientName.length < 2) errors.recipientName = 'Enter the name of the person receiving the documents.';
+  if (!PHONE_RE.test(recipientPhone)) errors.recipientPhone = 'Enter the recipient’s phone number, so the rider can reach them.';
   if (address.length < 6) errors.address = 'Enter the full delivery address.';
+  if (instructions.length < 3) errors.instructions = 'Add directions for the rider: a landmark, gate, floor or office.';
   if (!zoneForArea(area)) errors.area = 'Choose a delivery area from the list.';
   if (!colour) errors.colour = 'Choose black and white or colour.';
   if (!sides) errors.sides = 'Choose single- or double-sided.';
   if (!paperSize) errors.paperSize = 'Choose a paper size.';
+  if (!paperType) errors.paperType = 'Choose standard or special paper.';
   if (!finishing) errors.finishing = 'Choose a finishing option.';
   if (!(copies >= 1 && copies <= 500)) errors.copies = 'Copies must be between 1 and 500.';
   if (!Number.isNaN(pages) && !(pages >= 1 && pages <= 5000)) errors.pages = 'Pages must be between 1 and 5,000.';
 
-  if (Object.keys(errors).length || !colour || !sides || !paperSize || !finishing) {
+  if (Object.keys(errors).length || !colour || !sides || !paperSize || !paperType || !finishing) {
     return { value: null, errors };
   }
   return {
@@ -120,13 +132,15 @@ export function validateOrderFields(fields: Fields): { value: OrderFields; error
       name,
       email,
       phone,
-      recipientName: str(fields.recipientName || fields.name, 120),
+      recipientName,
+      recipientPhone,
       address,
       area,
-      instructions: str(fields.instructions, 500),
+      instructions,
       colour,
       sides,
       paperSize,
+      paperType,
       finishing,
       copies,
       pages
@@ -176,6 +190,7 @@ export async function createOrder(input: {
     colour: value.colour,
     sides: value.sides,
     paperSize: value.paperSize,
+    paperType: value.paperType,
     finishing: value.finishing,
     copies: value.copies,
     pages
@@ -198,7 +213,8 @@ export async function createOrder(input: {
     title: value.title || upload.name,
     customer: { name: value.name, email: value.email, phone: value.phone },
     delivery: {
-      recipientName: value.recipientName || value.name,
+      recipientName: value.recipientName,
+      phone: value.recipientPhone,
       address: value.address,
       area: value.area,
       zone: zone.id,
@@ -362,6 +378,7 @@ export function serializeOrder(
       colour: order.options.colour,
       sides: order.options.sides,
       paperSize: order.options.paperSize,
+      paperType: order.options.paperType ?? 'standard',
       finishing: order.options.finishing,
       copies: order.options.copies,
       pages: order.options.pages
@@ -379,6 +396,7 @@ export function serializeOrder(
     payment: { status: order.payment.status, paidAt: order.payment.paidAt?.toISOString() },
     delivery: {
       recipientName: order.delivery.recipientName,
+      phone: internal || order.channel === 'enterprise' ? order.delivery.phone || undefined : undefined,
       area: order.delivery.area,
       zone: order.delivery.zone,
       address: internal || order.channel === 'enterprise' ? order.delivery.address : undefined,

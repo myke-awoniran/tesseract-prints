@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FULFILMENT_FLOW, statusLabel, formatNaira, finishingLabel, type OpsOrderResponse, type OrderResponse, type OrderStatus, type OrderView } from '@tesseract/shared';
+import { FULFILMENT_FLOW, statusLabel, formatNaira, finishingLabel, paperTypeLabel, type OpsOrderResponse, type OrderResponse, type OrderStatus, type OrderView } from '@tesseract/shared';
 import { api, downloadFile, errorMessage } from '../../lib/api';
 import { Link, type RouteParams } from '../../lib/router';
 import { useAsync } from '../../lib/useAsync';
@@ -229,7 +229,7 @@ export default function OpsOrderDetail({ params }: { params: RouteParams }) {
               </div>
               <dl className="kv">
                 <div><dt>Document</dt><dd>{order.file.name} {order.file.size ? `· ${formatBytes(order.file.size)}` : ''}</dd></div>
-                <div><dt>Printing</dt><dd>{order.options.pages} pages × {order.options.copies} {order.options.copies === 1 ? 'copy' : 'copies'} · {order.options.colour === 'colour' ? 'Colour' : 'Black and white'} · {order.options.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {order.options.paperSize}</dd></div>
+                <div><dt>Printing</dt><dd>{order.options.pages} pages × {order.options.copies} {order.options.copies === 1 ? 'copy' : 'copies'} · {order.options.colour === 'colour' ? 'Colour' : 'Black and white'} · {order.options.sides === 'double' ? 'Double-sided' : 'Single-sided'} · {order.options.paperSize} · {paperTypeLabel(order.options.paperType)}</dd></div>
                 <div><dt>Sheets</dt><dd>{order.quote.sheets}</dd></div>
                 <div><dt>Finishing</dt><dd>{finishingLabel(order.options.finishing)}</dd></div>
               </dl>
@@ -282,6 +282,7 @@ export default function OpsOrderDetail({ params }: { params: RouteParams }) {
                 <div><dt>Email</dt><dd><a href={`mailto:${order.customer?.email}`}>{order.customer?.email}</a></dd></div>
                 <div><dt>Phone</dt><dd><a href={`tel:${order.customer?.phone}`}>{order.customer?.phone}</a></dd></div>
                 <div><dt>Deliver to</dt><dd>{order.delivery.recipientName}<br />{order.delivery.address}, {order.delivery.area}</dd></div>
+                {order.delivery.phone && <div><dt>Recipient’s phone</dt><dd><a href={`tel:${order.delivery.phone}`}>{order.delivery.phone}</a></dd></div>}
                 {order.delivery.instructions && <div><dt>Instructions</dt><dd>{order.delivery.instructions}</dd></div>}
               </dl>
             </section>
