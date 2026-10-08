@@ -5,10 +5,11 @@ The hero slideshow reads its slides from `src/content/site.ts` (`SLIDES`). Each 
 
 | File | Subject | Photographer | Licence |
 | --- | --- | --- | --- |
+| `abuja-aso-villa.jpg` | Presidential Villa and Aso Rock, Abuja | Supplied by you | n/a |
+| `abuja-city-gate.jpg` | Abuja City Gate | Mr Trinity001 | CC BY-SA 4.0 |
 | `abuja-aso-rock.jpg` | Aso Rock, Abuja | Uzoma Ozurumba | CC BY-SA 4.0 |
 | `lagos-victoria-island.jpg` | Victoria Island, Lagos | Ayorinde Ogundele | CC BY-SA 4.0 |
 | `abuja-national-mosque.jpg` | National Mosque, Abuja | Mark Fischer | CC BY-SA 2.0 |
-| `lagos-third-mainland.jpg` | Third Mainland Bridge, Lagos | S. Aderogba | CC BY-SA 4.0 |
 | `lagos-lekki-ikoyi.jpg` | Lekki–Ikoyi Link Bridge, Lagos | Chippla | CC BY-SA 3.0 |
 | `lagos-island.jpg` | Lagos Island | Sir Demo | CC BY-SA 4.0 |
 | `bridge.jpg` | Suspension bridge | Your own photo | n/a |

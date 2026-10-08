@@ -4,6 +4,7 @@ import {
   FINISHING,
   PAPER_SIZES,
   computeQuote,
+  PRICING,
   zoneForArea,
   formatNaira,
   finishingLabel,
@@ -130,6 +131,7 @@ export default function Express() {
   const { navigate } = useRouter();
   const [step, setStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
+  const [detectedPages, setDetectedPages] = useState<number | null>(null);
   const [form, setForm] = useState<ExpressForm>(INITIAL);
   const [errors, setErrors] = useState<Errors>({});
   const [created, setCreated] = useState<CreatedOrder | null>(null);
@@ -247,15 +249,32 @@ export default function Express() {
                     onChange={(f) => {
                       setFile(f);
                       setErrors((e) => ({ ...e, file: f ? checkFile(f) : '' }));
+                      if (detectedPages !== null && f?.type !== 'application/pdf') {
+                        setDetectedPages(null);
+                        setForm((prev) => ({ ...prev, pages: '' }));
+                      }
+                    }}
+                    onPages={(n) => {
+                      setDetectedPages(n);
+                      if (n !== null) {
+                        setForm((prev) => ({ ...prev, pages: String(n) }));
+                        setErrors((e) => ({ ...e, pages: '' }));
+                      }
                     }}
                   />
                   <Field
                     id="pages"
-                    label={isPdf ? 'Number of pages (optional)' : 'Number of pages'}
-                    hint={isPdf ? 'We count PDF pages automatically. Enter a number to see an estimate now.' : 'Count every page you want printed.'}
+                    label={isPdf && detectedPages === null ? 'Number of pages (optional)' : 'Number of pages'}
+                    hint={
+                      detectedPages !== null
+                        ? 'Counted from your PDF. Use Preview & edit to remove or rearrange pages.'
+                        : isPdf
+                          ? 'We count PDF pages automatically. Enter a number to see an estimate now.'
+                          : 'Count every page you want printed.'
+                    }
                     error={errors.pages}
                   >
-                    <input id="pages" className="input" type="number" inputMode="numeric" min="1" max="5000" value={form.pages} onChange={set('pages')} aria-invalid={Boolean(errors.pages)} style={{ maxWidth: 220 }} />
+                    <input id="pages" className="input" type="number" inputMode="numeric" min="1" max="5000" value={form.pages} onChange={set('pages')} readOnly={detectedPages !== null} aria-invalid={Boolean(errors.pages)} style={{ maxWidth: 220 }} />
                   </Field>
                 </div>
               </>
@@ -446,11 +465,22 @@ export default function Express() {
                     <dt>Delivery</dt>
                     <dd>{formatNaira(estimate.delivery)}</dd>
                   </div>
+                  {estimate.minimumTopUp > 0 && (
+                    <div>
+                      <dt>Minimum order top-up</dt>
+                      <dd>{formatNaira(estimate.minimumTopUp)}</dd>
+                    </div>
+                  )}
                 </dl>
                 <div className="summary__total">
                   <span>{created ? 'Total' : 'Estimated total'}</span>
                   <strong>{formatNaira(estimate.total)}</strong>
                 </div>
+                {estimate.minimumTopUp > 0 && (
+                  <p className="form-note" style={{ marginTop: 10 }}>
+                    Orders start at {formatNaira(PRICING.minimumOrderKobo)}, delivery included.
+                  </p>
+                )}
                 {!created && isPdf && <p className="form-note" style={{ marginTop: 10 }}>Confirmed once we count the pages in your PDF.</p>}
               </>
             ) : (

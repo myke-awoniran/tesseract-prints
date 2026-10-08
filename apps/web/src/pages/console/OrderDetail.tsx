@@ -4,6 +4,7 @@ import { Link, type RouteParams } from '../../lib/router';
 import { useAsync } from '../../lib/useAsync';
 import { formatDate, formatBytes, pillClass } from '../../lib/format';
 import { PageHead } from './ConsoleLayout';
+import { UpdatesFeed, formatTime } from '../../components/ops';
 
 export default function OrderDetail({ params }: { params: RouteParams }) {
   const ref = params.ref ?? '';
@@ -44,6 +45,25 @@ export default function OrderDetail({ params }: { params: RouteParams }) {
                 })}
               </ol>
             </section>
+            {(order.dispatch || order.updates.length > 0) && (
+              <section className="panel">
+                <div className="panel__head">
+                  <h2>Delivery</h2>
+                  {order.dispatch?.eta && order.status === 'out_for_delivery' && <span>Expected {formatTime(order.dispatch.eta)}</span>}
+                </div>
+                {order.dispatch && order.status === 'out_for_delivery' && (
+                  <div className="rider rider--wide">
+                    <span className="avatar" aria-hidden="true">{order.dispatch.riderName.slice(0, 1).toUpperCase()}</span>
+                    <div>
+                      <strong>{order.dispatch.riderName}</strong>
+                      <a href={`tel:${order.dispatch.riderPhone.replace(/[^\d+]/g, '')}`}>{order.dispatch.riderPhone}</a>
+                    </div>
+                    <span className="muted">Your courier</span>
+                  </div>
+                )}
+                <UpdatesFeed updates={order.updates} empty="No updates yet." />
+              </section>
+            )}
             <section className="panel">
               <div className="panel__head">
                 <h2>Details</h2>

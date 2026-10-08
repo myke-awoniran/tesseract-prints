@@ -18,6 +18,7 @@ import trackRoutes from './routes/track.js';
 import authRoutes from './routes/auth.js';
 import enterpriseRoutes from './routes/enterprise.js';
 import opsRoutes from './routes/ops.js';
+import { setMailLogger } from './lib/email/mailer.js';
 
 export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const app = Fastify({
@@ -25,6 +26,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
     trustProxy: true,
     bodyLimit: 1024 * 1024
   });
+  setMailLogger(app.log);
 
   await app.register(helmet, { contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-site' } });
   await app.register(cors, { origin: config.corsOrigins });

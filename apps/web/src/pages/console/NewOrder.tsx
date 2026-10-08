@@ -70,6 +70,7 @@ function Seg<T extends string>({ name, value, options, onChange }: SegProps<T>) 
 export default function NewOrder() {
   const { navigate } = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const [detectedPages, setDetectedPages] = useState<number | null>(null);
   const [form, setForm] = useState<NewOrderForm>(BLANK);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -137,7 +138,26 @@ export default function NewOrder() {
             <span>Encrypted on arrival · erased within 24 hours</span>
           </div>
           <div className="c-form">
-            <FileDrop variant="console" id="console-file" file={file} error={errors.file} onChange={setFile} />
+            <FileDrop
+              variant="console"
+              id="console-file"
+              file={file}
+              error={errors.file}
+              onChange={(f) => {
+                setFile(f);
+                if (detectedPages !== null && f?.type !== 'application/pdf') {
+                  setDetectedPages(null);
+                  setField('pages', '');
+                }
+              }}
+              onPages={(n) => {
+                setDetectedPages(n);
+                if (n !== null) {
+                  setField('pages', String(n));
+                  setErrors((e) => ({ ...e, pages: '' }));
+                }
+              }}
+            />
             <div className="c-form-grid">
               <div className="c-field">
                 <label htmlFor="title">Reference or title (optional)</label>
@@ -145,8 +165,12 @@ export default function NewOrder() {
               </div>
               <div className="c-field">
                 <label htmlFor="pages">Pages</label>
-                <input id="pages" className="c-input" type="number" min="1" value={form.pages} onChange={bind('pages')} aria-invalid={Boolean(errors.pages)} />
-                {errors.pages ? <span className="c-error">{errors.pages}</span> : <span className="hint">Counted automatically for PDFs.</span>}
+                <input id="pages" className="c-input" type="number" min="1" value={form.pages} onChange={bind('pages')} readOnly={detectedPages !== null} aria-invalid={Boolean(errors.pages)} />
+                {errors.pages ? (
+                  <span className="c-error">{errors.pages}</span>
+                ) : (
+                  <span className="hint">{detectedPages !== null ? 'Counted from your PDF. Use Preview & edit to change it.' : 'Counted automatically for PDFs.'}</span>
+                )}
               </div>
             </div>
           </div>

@@ -32,6 +32,15 @@ export interface AppConfig {
   paystackSecret: string;
   logLevel: string;
   webDist: string | null;
+  email: {
+    /** Sender shown to customers, e.g. "Tesseract Prints <orders@tesseractprints.com>". */
+    from: string;
+    replyTo: string;
+    /** Where new-order and enquiry alerts for the print room go. Empty disables them. */
+    opsAddress: string;
+    resendApiKey: string;
+    smtpUrl: string;
+  };
 }
 
 export const config: AppConfig = {
@@ -45,7 +54,14 @@ export const config: AppConfig = {
   corsOrigins: (env.CORS_ORIGINS || webUrl).split(',').map((s) => s.trim()),
   paystackSecret: env.PAYSTACK_SECRET_KEY || '',
   logLevel: env.LOG_LEVEL || (isProd ? 'info' : 'debug'),
-  webDist: env.WEB_DIST || null
+  webDist: env.WEB_DIST || null,
+  email: {
+    from: env.EMAIL_FROM || 'Tesseract Prints <orders@tesseractprints.com>',
+    replyTo: env.EMAIL_REPLY_TO || '',
+    opsAddress: env.OPS_EMAIL || '',
+    resendApiKey: env.RESEND_API_KEY || '',
+    smtpUrl: env.SMTP_URL || ''
+  }
 };
 
 export const paymentsAreMocked = !config.paystackSecret;

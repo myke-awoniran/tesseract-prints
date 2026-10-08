@@ -18,6 +18,20 @@ export interface TimelineEntry {
   note: string;
 }
 
+export interface DeliveryUpdate {
+  _id: string;
+  at: Date;
+  message: string;
+  by: string;
+}
+
+export interface Dispatch {
+  riderName: string;
+  riderPhone: string;
+  eta?: Date | null;
+  assignedAt: Date;
+}
+
 export interface IOrder {
   _id: string;
   ref: string;
@@ -37,6 +51,10 @@ export interface IOrder {
   fileDeletedAt?: Date;
   handoverCode?: string;
   accessTokenHash?: string;
+  /** The customer's tracking token, encrypted, so later emails can carry their private tracking link. */
+  accessTokenEnc?: string;
+  dispatch?: Dispatch | null;
+  updates: DeliveryUpdate[];
   deliveredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -77,6 +95,7 @@ const orderSchema = new Schema<IOrder>(
       finishing: Number,
       delivery: Number,
       sealing: Number,
+      minimumTopUp: { type: Number, default: 0 },
       total: Number,
       sheets: Number
     },
@@ -105,9 +124,28 @@ const orderSchema = new Schema<IOrder>(
     fileDeletedAt: Date,
     handoverCode: { type: String, select: false },
     accessTokenHash: { type: String, select: false },
+    accessTokenEnc: { type: String, select: false },
+    dispatch: {
+      type: {
+        _id: false,
+        riderName: { type: String, trim: true, required: true },
+        riderPhone: { type: String, trim: true, required: true },
+        eta: { type: Date, default: null },
+        assignedAt: { type: Date, default: Date.now }
+      },
+      default: null
+    },
+    updates: [
+      {
+        _id: uuidId,
+        at: { type: Date, default: Date.now },
+        message: { type: String, trim: true, required: true },
+        by: { type: String, default: '' }
+      }
+    ],
     deliveredAt: Date
   },
-  { timestamps: true, toJSON: { transform: transformOutput('accessTokenHash', 'handoverCode') } }
+  { timestamps: true, toJSON: { transform: transformOutput('accessTokenHash', 'accessTokenEnc', 'handoverCode') } }
 );
 
 orderSchema.index({ organization: 1, createdAt: -1 });

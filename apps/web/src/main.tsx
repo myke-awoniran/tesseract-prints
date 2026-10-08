@@ -6,6 +6,8 @@ import App from './App';
 import './styles/global.css';
 import './styles/site.css';
 import './styles/console.css';
+import './styles/pdf.css';
+import './styles/ops.css';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Missing #root element in index.html');

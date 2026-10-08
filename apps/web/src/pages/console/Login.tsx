@@ -13,7 +13,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (state.status === 'signed-in') navigate(state.user.role === 'operator' ? '/console/queue' : '/console', { replace: true });
+    if (state.status === 'signed-in') navigate(state.user.role === 'operator' ? '/console/ops' : '/console', { replace: true });
   }, [state, navigate]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {

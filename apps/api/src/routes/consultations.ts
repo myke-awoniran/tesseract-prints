@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ConsultationRequest } from '@tesseract/shared';
 import { Consultation } from '../models/Consultation.js';
+import { notifyConsultation } from '../lib/email/notify.js';
 
 export default async function consultationRoutes(app: FastifyInstance) {
   app.post<{ Body: ConsultationRequest }>(
@@ -25,6 +26,7 @@ export default async function consultationRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       await Consultation.create(req.body);
+      void notifyConsultation(req.body);
       return reply.code(201).send({ ok: true });
     }
   );

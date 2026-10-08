@@ -22,6 +22,23 @@ export interface FaqTopic {
 
 export const SLIDES: Slide[] = [
   {
+    src: '/images/abuja-aso-villa.jpg',
+    srcSm: '/images/abuja-aso-villa-sm.jpg',
+    alt: 'The Presidential Villa and its gardens at the foot of Aso Rock',
+    city: 'Abuja',
+    caption: 'Presidential Villa',
+    focus: '50% 62%'
+  },
+  {
+    src: '/images/abuja-city-gate.jpg',
+    srcSm: '/images/abuja-city-gate-sm.jpg',
+    alt: 'The white arches of the Abuja City Gate, with the Nigerian flag flying between them',
+    city: 'Abuja',
+    caption: 'City Gate',
+    focus: '62% 45%',
+    // credit: { author: 'Mr Trinity001', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Abuja_City_Gate_07.jpg' }
+  },
+  {
     src: '/images/abuja-aso-rock.jpg',
     srcSm: '/images/abuja-aso-rock-sm.jpg',
     alt: 'Aso Rock under a storm sky, with traffic on the road below',
@@ -51,15 +68,6 @@ export const SLIDES: Slide[] = [
     caption: 'National Mosque',
     focus: '60% 50%',
     // credit: { author: 'Mark Fischer', license: 'CC BY-SA 2.0', url: 'https://commons.wikimedia.org/wiki/File:Abuja_National_Mosque.jpg' }
-  },
-  {
-    src: '/images/lagos-third-mainland.jpg',
-    srcSm: '/images/lagos-third-mainland-sm.jpg',
-    alt: 'Beneath the Third Mainland Bridge, a canoe on the lagoon',
-    city: 'Lagos',
-    caption: 'Third Mainland Bridge',
-    focus: '35% 60%',
-    // credit: { author: 'S. Aderogba', license: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Third-mainland-bridge-lagos.jpg' }
   },
   {
     src: '/images/lagos-lekki-ikoyi.jpg',

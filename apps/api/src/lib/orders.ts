@@ -24,6 +24,7 @@ import type { UserDocument } from '../models/User.js';
 import { storeEncryptedFile, destroyFile } from './files.js';
 import { orderRef, randomToken, sha256, handoverCode, safeEqual } from './crypto.js';
 import { HttpError, badRequest, conflict } from './errors.js';
+import { notifyOrderConfirmed, notifyStatusChanged, notifyDeliveryUpdate, sealToken } from './email/notify.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[0-9 ()-]{7,20}$/;
@@ -209,12 +210,16 @@ export async function createOrder(input: {
     file: { id: stored._id, name: upload.name, mime: upload.mime, size: upload.buffer.length },
     fileExpiresAt,
     accessTokenHash: sha256(accessToken),
-    handoverCode: isEnterprise ? handoverCode() : undefined
+    accessTokenEnc: sealToken(accessToken),
+    handoverCode: isEnterprise ? handoverCode() : undefined,
+    dispatch: null,
+    updates: []
   };
 
   for (let attempt = 0; ; attempt += 1) {
     try {
       const order = await Order.create({ ...base, ref: orderRef() });
+      if (isEnterprise) void notifyOrderConfirmed(order);
       return { order, accessToken };
     } catch (err) {
       const duplicate = (err as { code?: number }).code === 11000;
@@ -234,7 +239,7 @@ export async function findOrderByToken(ref: string, token: string, extraSelect =
 
 /** Marks an express order paid exactly once, even if the webhook and the return page race. */
 export async function markPaid(orderId: string, provider: string): Promise<void> {
-  await Order.updateOne(
+  const result = await Order.updateOne(
     { _id: orderId, 'payment.status': { $ne: 'paid' }, status: 'awaiting_payment' },
     {
       $set: {
@@ -247,13 +252,42 @@ export async function markPaid(orderId: string, provider: string): Promise<void>
       $push: { timeline: { status: 'queued', note: 'Payment confirmed', at: new Date() } }
     }
   );
+  if (result.modifiedCount === 1) {
+    const order = await Order.findById(orderId);
+    if (order) void notifyOrderConfirmed(order);
+  }
+}
+
+const PHONE_OK = /^\+?[0-9 ()-]{7,20}$/;
+
+/** Records which rider is carrying the order. */
+export function assignDispatch(order: OrderDocument, rider: { name: string; phone: string }, eta?: string | null): void {
+  const name = rider.name.trim();
+  const phone = rider.phone.trim();
+  if (name.length < 2) throw badRequest('Enter the rider’s name.', { riderName: 'Enter the rider’s name.' });
+  if (!PHONE_OK.test(phone)) throw badRequest('Enter the rider’s phone number.', { riderPhone: 'Enter a valid phone number.' });
+  const etaDate = eta ? new Date(eta) : null;
+  if (etaDate && Number.isNaN(etaDate.getTime())) throw badRequest('That arrival time is not valid.');
+  order.dispatch = { riderName: name, riderPhone: phone, eta: etaDate, assignedAt: new Date() };
+}
+
+/** Posts an update the customer sees on their tracking page, and optionally by email. */
+export async function addDeliveryUpdate(order: OrderDocument, message: string, ctx: { user?: UserDocument | null; notify?: boolean; ip?: string } = {}): Promise<OrderDocument> {
+  const text = message.trim();
+  if (text.length < 3) throw badRequest('Write the update first.', { message: 'Write the update first.' });
+  if (order.status === 'delivered' || order.status === 'cancelled') throw conflict('This order is closed.');
+  order.updates.push({ _id: randomUUID(), at: new Date(), message: text, by: ctx.user?.name ?? '' });
+  await order.save();
+  await AccessLog.create({ order: order._id, user: ctx.user?._id ?? null, action: 'update_posted', detail: text.slice(0, 200), ip: ctx.ip });
+  if (ctx.notify) void notifyDeliveryUpdate(order, text);
+  return order;
 }
 
 /** Moves an order forward through fulfilment. Delivery requires the recipient's handover code. */
 export async function advanceStatus(
   order: OrderDocument,
   next: OrderStatus,
-  ctx: { user?: UserDocument | null; note?: string; code?: string; ip?: string } = {}
+  ctx: { user?: UserDocument | null; note?: string; code?: string; ip?: string; rider?: { name: string; phone: string }; eta?: string | null } = {}
 ): Promise<OrderDocument> {
   const { user = null, note = '', code = '', ip = '' } = ctx;
   const current = order.status;
@@ -268,6 +302,11 @@ export async function advanceStatus(
     if (to === -1 || to <= from) {
       throw badRequest(`An order that is ${statusLabel(current).toLowerCase()} cannot move to ${statusLabel(next).toLowerCase()}.`);
     }
+  }
+
+  if (next === 'out_for_delivery') {
+    if (ctx.rider) assignDispatch(order, ctx.rider, ctx.eta);
+    else if (!order.dispatch) throw badRequest('Assign a rider before sending the order out.', { riderName: 'Enter the rider’s name.' });
   }
 
   if (next === 'delivered') {
@@ -292,6 +331,7 @@ export async function advanceStatus(
 
   await order.save();
   await AccessLog.insertMany(logs);
+  void notifyStatusChanged(order, note);
   return order;
 }
 
@@ -324,6 +364,7 @@ export function serializeOrder(
       finishing: order.quote.finishing,
       delivery: order.quote.delivery,
       sealing: order.quote.sealing,
+      minimumTopUp: order.quote.minimumTopUp ?? 0,
       total: order.quote.total,
       sheets: order.quote.sheets
     },
@@ -343,7 +384,16 @@ export function serializeOrder(
       erasedAt: order.fileDeletedAt?.toISOString()
     },
     createdAt: order.createdAt.toISOString(),
-    deliveredAt: order.deliveredAt?.toISOString()
+    deliveredAt: order.deliveredAt?.toISOString(),
+    dispatch: order.dispatch
+      ? {
+          riderName: order.dispatch.riderName,
+          riderPhone: order.dispatch.riderPhone,
+          eta: order.dispatch.eta?.toISOString(),
+          assignedAt: order.dispatch.assignedAt.toISOString()
+        }
+      : undefined,
+    updates: (order.updates ?? []).map((u) => ({ id: u._id, at: u.at.toISOString(), message: u.message, by: u.by }))
   };
   if (internal) view.customer = { name: order.customer.name, email: order.customer.email, phone: order.customer.phone };
   if (includeHandover && order.handoverCode && order.status !== 'delivered' && order.status !== 'cancelled') {

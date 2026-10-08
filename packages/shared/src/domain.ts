@@ -130,6 +130,8 @@ export interface Quote {
   finishing: number;
   delivery: number;
   sealing: number;
+  /** Added when the order comes to less than the minimum order value. */
+  minimumTopUp: number;
   total: number;
   sheets: number;
 }
@@ -145,7 +147,9 @@ export const PRICING = {
   finishingPerCopyKobo: { none: 0, stapled: 20_000, spiral: 150_000, comb: 120_000, hardbound: 500_000 } satisfies Record<FinishingId, number>,
   paperMultiplier: { A4: 1, Letter: 1, A3: 2 } satisfies Record<PaperSize, number>,
   deliveryKobo: { central: 300_000, inner: 450_000, outer: 700_000 } satisfies Record<ZoneId, number>,
-  sealingKobo: 50_000
+  sealingKobo: 50_000,
+  /** Every order costs at least this much, delivery included (₦5,000). */
+  minimumOrderKobo: 500_000
 } as const;
 
 export function computeQuote(input: PrintOptions & { zone: ZoneId }): Quote {
@@ -155,13 +159,16 @@ export function computeQuote(input: PrintOptions & { zone: ZoneId }): Quote {
   const delivery = PRICING.deliveryKobo[zone];
   const sealing = PRICING.sealingKobo;
   const sheetsPerCopy = sides === 'double' ? Math.ceil(pages / 2) : pages;
+  const subtotal = printing + finishingTotal + delivery + sealing;
+  const minimumTopUp = Math.max(0, PRICING.minimumOrderKobo - subtotal);
   return {
     currency: 'NGN',
     printing,
     finishing: finishingTotal,
     delivery,
     sealing,
-    total: printing + finishingTotal + delivery + sealing,
+    minimumTopUp,
+    total: subtotal + minimumTopUp,
     sheets: sheetsPerCopy * copies
   };
 }

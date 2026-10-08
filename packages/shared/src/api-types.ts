@@ -26,6 +26,21 @@ export interface TimelineEntryView {
   note: string;
 }
 
+/** A note about the delivery that the customer can see, e.g. "Rider is 10 minutes away". */
+export interface DeliveryUpdateView {
+  id: string;
+  at: ISODateString;
+  message: string;
+  by: string;
+}
+
+export interface DispatchView {
+  riderName: string;
+  riderPhone: string;
+  eta?: ISODateString;
+  assignedAt: ISODateString;
+}
+
 export interface OrderView {
   ref: string;
   channel: OrderChannel;
@@ -52,6 +67,9 @@ export interface OrderView {
   };
   createdAt: ISODateString;
   deliveredAt?: ISODateString;
+  /** The rider carrying the order, once one is assigned. */
+  dispatch?: DispatchView;
+  updates: DeliveryUpdateView[];
   /** Present for operators only. */
   customer?: { name: string; email: string; phone: string };
   /** Present while the order is undelivered, for people entitled to see it. */
@@ -204,7 +222,90 @@ export interface StatusChangeRequest {
   status: OrderStatus;
   note?: string;
   handoverCode?: string;
+  /** Required when moving to out_for_delivery unless a rider is already assigned. */
+  rider?: { name: string; phone: string };
+  eta?: ISODateString;
+}
+export interface AccessLogEntryView {
+  action: string;
+  detail: string;
+  at: ISODateString;
+  by: string;
+  ref?: string;
 }
 export interface AccessLogResponse {
-  entries: { action: string; detail: string; at: ISODateString; by: string }[];
+  entries: AccessLogEntryView[];
+}
+
+export interface DispatchRequest {
+  riderName: string;
+  riderPhone: string;
+  eta?: ISODateString | null;
+}
+export interface DeliveryUpdateRequest {
+  message: string;
+  /** Email the customer as well as showing the update on their tracking page. */
+  notify: boolean;
+}
+
+export type EmailStatus = 'sent' | 'failed' | 'skipped';
+export interface EmailView {
+  id: string;
+  to: string;
+  subject: string;
+  template: string;
+  orderRef?: string;
+  status: EmailStatus;
+  error?: string;
+  provider: string;
+  at: ISODateString;
+}
+export interface EmailsResponse {
+  items: EmailView[];
+  total: number;
+  page: number;
+  pages: number;
+  provider: string;
+}
+export interface EmailTemplateInfo {
+  id: string;
+  name: string;
+  description: string;
+}
+export interface EmailTemplatesResponse {
+  templates: EmailTemplateInfo[];
+}
+
+export interface OpsOrderResponse {
+  order: OrderView;
+  log: AccessLogEntryView[];
+  emails: EmailView[];
+}
+
+export interface OpsOverviewResponse {
+  pipeline: { status: OrderStatus; label: string; count: number }[];
+  today: { received: number; delivered: number; revenue: number; pages: number };
+  month: { orders: number; revenue: number; pages: number; expressRevenue: number; invoiced: number };
+  turnaroundHours: number | null;
+  awaitingPayment: number;
+  alerts: { kind: 'overdue' | 'expiring' | 'unassigned'; ref: string; title: string; detail: string }[];
+  series: { day: string; orders: number; revenue: number }[];
+  byZone: { zone: string; label: string; orders: number }[];
+  activity: AccessLogEntryView[];
+}
+
+export interface ClientView {
+  id: string;
+  name: string;
+  billingEmail: string;
+  members: number;
+  orders: number;
+  inProgress: number;
+  spend: number;
+  spendThisMonth: number;
+  lastOrderAt?: ISODateString;
+}
+export interface ClientsResponse {
+  clients: ClientView[];
+  express: { customers: number; orders: number; revenue: number };
 }

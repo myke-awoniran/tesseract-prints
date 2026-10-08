@@ -15,7 +15,14 @@ const CLIENT_NAV: NavItem[] = [
   { to: '/console/orders/new', label: 'New order', icon: Icon.Plus },
   { to: '/console/settings', label: 'Settings', icon: Icon.Settings }
 ];
-const OPERATOR_NAV: NavItem[] = [{ to: '/console/queue', label: 'Print queue', icon: Icon.Printer }];
+const OPERATOR_NAV: NavItem[] = [
+  { to: '/console/ops', label: 'Overview', icon: Icon.Grid },
+  { to: '/console/queue', label: 'Print queue', icon: Icon.Printer },
+  { to: '/console/deliveries', label: 'Deliveries', icon: Icon.Truck },
+  { to: '/console/ops/orders', label: 'All orders', icon: Icon.List },
+  { to: '/console/clients', label: 'Clients', icon: Icon.Users },
+  { to: '/console/emails', label: 'Emails', icon: Icon.Mail }
+];
 
 export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?: readonly Role[] }) {
   const { state, logout } = useAuth();
@@ -35,7 +42,7 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
   if (state.status !== 'signed-in') return <Redirect to="/console/login" />;
   const { user, organization } = state;
   if (roles && !roles.includes(user.role)) {
-    return <Redirect to={user.role === 'operator' ? '/console/queue' : '/console'} />;
+    return <Redirect to={user.role === 'operator' ? '/console/ops' : '/console'} />;
   }
 
   const nav = user.role === 'operator' ? OPERATOR_NAV : CLIENT_NAV;

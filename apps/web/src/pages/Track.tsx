@@ -108,6 +108,39 @@ export default function Track({ params }: { params: RouteParams }) {
                     })}
                   </ol>
                 )}
+
+                {order.dispatch && order.status === 'out_for_delivery' && (
+                  <div className="courier">
+                    <p className="form-note">Your courier</p>
+                    <div className="courier__row">
+                      <span className="courier__avatar" aria-hidden="true">{order.dispatch.riderName.slice(0, 1).toUpperCase()}</span>
+                      <div>
+                        <strong>{order.dispatch.riderName}</strong>
+                        <a href={`tel:${order.dispatch.riderPhone.replace(/[^\d+]/g, '')}`}>{order.dispatch.riderPhone}</a>
+                      </div>
+                      {order.dispatch.eta && (
+                        <div className="courier__eta">
+                          <span>Expected</span>
+                          <strong>{new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Lagos' }).format(new Date(order.dispatch.eta))}</strong>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {order.updates.length > 0 && (
+                  <div className="updates">
+                    <p className="form-note">Updates from the print room</p>
+                    <ol>
+                      {[...order.updates].reverse().map((u) => (
+                        <li key={u.id}>
+                          <p>{u.message}</p>
+                          <time dateTime={u.at}>{formatDate(u.at)}</time>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </section>
 
               <aside>
