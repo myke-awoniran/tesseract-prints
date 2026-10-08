@@ -19,7 +19,7 @@ Everything is TypeScript in strict mode. The API and the web app share one set o
 
 **Website** (`/`): hero slideshow, services, institutions, governance, engagement process, tabbed FAQs and a consultation form that saves enquiries to MongoDB. No prices appear on the marketing pages.
 
-**Express printing** (`/express`): no account needed. Upload → print options → delivery → review and pay (Paystack). The customer gets a private tracking link (`/track/:ref?t=…`) showing progress and a six-digit handover code.
+**Express printing** (`/express`): no account needed. Upload → print options → delivery → review and pay (Bachs, or Paystack as a fallback). The customer gets a private tracking link (`/track/:ref?t=…`) showing progress and a six-digit handover code.
 
 **Client console** (`/console`, black theme):
 - Sign in (JWT, 8-hour sessions)
@@ -59,15 +59,33 @@ the owner sees the client console; the operator sees the print queue.
 
 ### Payments
 
-With `PAYSTACK_SECRET_KEY` empty, development uses **mock payments**: "Pay" returns straight to the confirmation page and marks the order paid. The API refuses to start in production without a real key.
+Payments go through **Bachs** by default; **Paystack** is a drop-in fallback. `PAYMENT_PROVIDER` (`bachs` or `paystack`) picks the gateway for new checkouts. Each order remembers the gateway it was sent to, and both webhooks stay active, so switching never strands a payment already in progress.
 
-For live payments set `PAYSTACK_SECRET_KEY` and add this webhook URL in the Paystack dashboard:
+With the active gateway's key empty, development uses **mock payments**: "Pay" returns straight to the confirmation page and marks the order paid. The API refuses to start in production without a real key.
+
+**Bachs (primary).** In [app.bachs.io](https://app.bachs.io) → Developer Portal:
+
+1. Create a secret key with the `payments:read` and `payments:write` scopes and set `BACHS_SECRET_KEY`. `sk_sandbox_…` keys talk to the sandbox; `sk_live_…` keys take real money (your account must be verified first).
+2. Under Webhooks, add `https://your-domain/api/payments/bachs/webhook`, subscribe to `collection.succeeded` and `checkout.completed`, and copy the signing secret into `BACHS_WEBHOOK_SECRET` (required in production).
+
+Checkouts are hosted by Bachs, priced in NGN. Customers who back out return to a page where they can try again; unpaid orders also show a pay button on their tracking page.
+
+**Paystack (fallback).** Set `PAYSTACK_SECRET_KEY` and add this webhook URL in the Paystack dashboard:
 
 ```
 https://your-domain/api/payments/paystack/webhook
 ```
 
-Payments are confirmed twice (return page and webhook) and checked against the order amount; marking an order paid is idempotent.
+Payments are confirmed twice (return page and webhook), always by asking the gateway directly, and checked against the order's amount and currency; marking an order paid is idempotent.
+
+### Monthly invoices (account organisations)
+
+Organisation orders skip checkout and go straight to the print queue. On the 1st of each month (Lagos time) the API issues one invoice per organisation for the previous month's orders, due in 14 days, and emails it to the organisation's billing email (or its owners if none is set). The email carries a private link to view and pay the invoice without signing in; console users can also pay from **Billing**. Payment goes through the active gateway (Bachs by default) and is confirmed the same way as express orders. One reminder is sent when an invoice becomes overdue.
+
+The print room manages invoices under **Invoices** in the console: record a bank transfer, void and re-issue, resend, or bill last month immediately. Billing is idempotent: a month is never billed twice for the same organisation.
+
+- `BILLING_START` (`YYYY-MM`, default `2026-10`): the first month invoiced. Earlier orders are never billed.
+- `BILLING_BANK_DETAILS`: optional bank details printed on invoices for clients who pay by transfer.
 
 ### Production
 
@@ -96,9 +114,13 @@ Put it behind HTTPS (e.g. Caddy or Nginx). Use MongoDB Atlas or a replica set wi
 | POST | `/api/consultations` | anyone |
 | POST | `/api/express/orders` (multipart) | anyone |
 | POST | `/api/express/orders/:ref/pay` | holder of the order token |
-| GET | `/api/payments/verify?reference=` | anyone |
+| GET | `/api/payments/verify?checkout_id=` or `?reference=` | anyone |
+| POST | `/api/payments/bachs/webhook` | Bachs (signature checked) |
 | POST | `/api/payments/paystack/webhook` | Paystack (signature checked) |
 | GET | `/api/track/:ref?t=` | holder of the order token |
+| GET, POST | `/api/invoices/:number?t=`, `/api/invoices/:number/pay` | holder of the invoice link |
+| GET, POST | `/api/enterprise/invoices`, `/enterprise/invoices/:number`, `/:number/pay` | client users |
+| GET, POST | `/api/ops/invoices`, `/ops/invoices/:number`, `/mark-paid`, `/void`, `/resend`, `/api/ops/billing/run` | operators |
 | POST | `/api/auth/login`, GET `/api/auth/me` | users |
 | GET | `/api/enterprise/stats`, `/orders`, `/orders/:ref`, `/settings`, `/team` | client users |
 | POST | `/api/enterprise/orders` (multipart), `/team`, `/settings/password` | client users (team: owner/admin) |

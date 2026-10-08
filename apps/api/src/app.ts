@@ -14,6 +14,7 @@ import healthRoutes from './routes/health.js';
 import consultationRoutes from './routes/consultations.js';
 import expressRoutes from './routes/express.js';
 import paymentRoutes from './routes/payments.js';
+import billingRoutes from './routes/billing.js';
 import trackRoutes from './routes/track.js';
 import authRoutes from './routes/auth.js';
 import enterpriseRoutes from './routes/enterprise.js';
@@ -58,6 +59,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
       await api.register(consultationRoutes);
       await api.register(expressRoutes);
       await api.register(paymentRoutes);
+      await api.register(billingRoutes);
       await api.register(trackRoutes);
       await api.register(authRoutes);
       await api.register(enterpriseRoutes);

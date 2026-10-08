@@ -29,23 +29,10 @@ import { EmailLog, type EmailLogDocument } from '../models/EmailLog.js';
 import { advanceStatus, serializeOrder, fileIsAvailable, assignDispatch, addDeliveryUpdate } from '../lib/orders.js';
 import { readDecryptedFile } from '../lib/files.js';
 import { requireUser } from '../lib/request.js';
+import { DAY, LAGOS_OFFSET_MS, startOfLagosDay, startOfLagosMonth } from '../lib/time.js';
 import { badRequest, gone, notFound } from '../lib/errors.js';
 import { emailProvider, resendEmail, sendEmail } from '../lib/email/mailer.js';
 import { TEMPLATE_INFO, sampleEmail, type TemplateId } from '../lib/email/templates.js';
-
-const LAGOS_OFFSET_MS = 60 * 60 * 1000; // West Africa Time, UTC+1, no daylight saving
-const DAY = 24 * 60 * 60 * 1000;
-
-function startOfLagosDay(at = new Date()): Date {
-  const local = new Date(at.getTime() + LAGOS_OFFSET_MS);
-  local.setUTCHours(0, 0, 0, 0);
-  return new Date(local.getTime() - LAGOS_OFFSET_MS);
-}
-
-function startOfLagosMonth(at = new Date()): Date {
-  const local = new Date(at.getTime() + LAGOS_OFFSET_MS);
-  return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1) - LAGOS_OFFSET_MS);
-}
 
 /** Orders that count as business: paid express orders and invoiced account orders, not cancelled. */
 const BILLABLE = { 'payment.status': { $in: ['paid', 'invoiced'] }, status: { $ne: 'cancelled' } };

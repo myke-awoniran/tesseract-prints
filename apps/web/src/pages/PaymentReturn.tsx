@@ -3,45 +3,55 @@ import type { VerifyPaymentResponse } from '@tesseract/shared';
 import { SiteHeader } from '../components/SiteHeader';
 import { SiteFooter } from '../components/SiteFooter';
 import { SealStamp } from '../components/SealStamp';
+import { PayNowButton, expressPayPath } from '../components/PayNowButton';
 import { Link, useQuery } from '../lib/router';
-import { api, recallExpressToken, errorMessage } from '../lib/api';
+import { api, getToken, recallExpressToken, recallInvoiceToken, errorMessage } from '../lib/api';
 
 type ReturnState =
   | { status: 'checking' }
-  | { status: 'paid' | 'pending'; ref: string }
+  | { status: 'paid' | 'pending' | 'cancelled'; ref: string; kind: 'order' | 'invoice' }
   | { status: 'error'; message: string };
 
 export default function PaymentReturn() {
   const query = useQuery();
+  // Bachs returns with checkout_id; Paystack, the mock and our cancel link carry reference.
+  const checkoutId = query.get('checkout_id');
   const reference = query.get('reference') || query.get('trxref');
+  const cancelled = query.get('cancelled') === '1';
   const [state, setState] = useState<ReturnState>({ status: 'checking' });
 
   useEffect(() => {
-    let cancelled = false;
+    let stopped = false;
     async function verify(attempt = 0): Promise<void> {
-      if (!reference) {
+      if (!checkoutId && !reference) {
         setState({ status: 'error', message: 'This page needs a payment reference. Open it from the payment confirmation.' });
         return;
       }
       try {
-        const res = await api<VerifyPaymentResponse>(`/payments/verify?reference=${encodeURIComponent(reference)}`);
-        if (cancelled) return;
-        if (res.paid) setState({ status: 'paid', ref: res.ref });
+        const lookup = checkoutId ? `checkout_id=${encodeURIComponent(checkoutId)}` : `reference=${encodeURIComponent(reference ?? '')}`;
+        const res = await api<VerifyPaymentResponse>(`/payments/verify?${lookup}`);
+        if (stopped) return;
+        const kind = res.kind ?? 'order';
+        if (res.paid) setState({ status: 'paid', ref: res.ref, kind });
+        else if (cancelled) setState({ status: 'cancelled', ref: res.ref, kind });
         else if (attempt < 4) setTimeout(() => verify(attempt + 1), 2500);
-        else setState({ status: 'pending', ref: res.ref });
+        else setState({ status: 'pending', ref: res.ref, kind });
       } catch (err) {
-        if (!cancelled) setState({ status: 'error', message: errorMessage(err) });
+        if (!stopped) setState({ status: 'error', message: errorMessage(err) });
       }
     }
     verify();
     return () => {
-      cancelled = true;
+      stopped = true;
     };
-  }, [reference]);
+  }, [checkoutId, reference, cancelled]);
 
   const ref = 'ref' in state ? state.ref : null;
-  const token = ref ? recallExpressToken(ref) : null;
+  const isInvoice = 'kind' in state && state.kind === 'invoice';
+  const token = ref && !isInvoice ? recallExpressToken(ref) : null;
   const trackUrl = ref && token ? `/track/${ref}?t=${token}` : null;
+
+  if (isInvoice && ref) return <InvoiceReturn status={state.status as 'paid' | 'pending' | 'cancelled'} number={ref} />;
 
   return (
     <>
@@ -76,12 +86,66 @@ export default function PaymentReturn() {
             {trackUrl && <Link to={trackUrl} className="btn btn--primary">Go to your tracking page</Link>}
           </>
         )}
+        {state.status === 'cancelled' && (
+          <>
+            <h1>Payment not completed.</h1>
+            <p>Order {ref} is saved and waiting. Nothing was charged, and you can pay whenever you’re ready.</p>
+            {ref && token ? (
+              <PayNowButton path={expressPayPath(ref)} body={{ token }} label="Try payment again" />
+            ) : (
+              <p>Use the tracking link saved on the device you ordered from to pay.</p>
+            )}
+          </>
+        )}
         {state.status === 'error' && (
           <>
             <h1>We couldn’t confirm this payment.</h1>
             <p>{state.message}</p>
             <Link to="/express" className="btn btn--outline">Return to express printing</Link>
           </>
+        )}
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
+
+/** After paying an organisation's invoice: back to the console if signed in, otherwise to the invoice link. */
+function InvoiceReturn({ status, number }: { status: 'paid' | 'pending' | 'cancelled'; number: string }) {
+  const publicToken = recallInvoiceToken(number);
+  const invoiceUrl = getToken()
+    ? `/console/billing/${number}`
+    : publicToken
+      ? `/invoice/${number}?t=${encodeURIComponent(publicToken)}`
+      : null;
+
+  return (
+    <>
+      <SiteHeader />
+      <main id="main" className="center-stage" aria-live="polite">
+        {status === 'paid' && (
+          <>
+            <SealStamp />
+            <h1>Paid. Thank you.</h1>
+            <p>Invoice {number} is settled. A receipt is on its way to your billing email.</p>
+          </>
+        )}
+        {status === 'pending' && (
+          <>
+            <h1>We haven’t received confirmation yet.</h1>
+            <p>If you completed payment, it can take a minute to arrive. The invoice will show as paid once it does.</p>
+          </>
+        )}
+        {status === 'cancelled' && (
+          <>
+            <h1>Payment not completed.</h1>
+            <p>Nothing was charged. Invoice {number} is still open and you can pay whenever you’re ready.</p>
+          </>
+        )}
+        {invoiceUrl ? (
+          <Link to={invoiceUrl} className="btn btn--primary">View invoice</Link>
+        ) : (
+          <p>Use the link in your invoice email to view it.</p>
         )}
       </main>
       <SiteFooter />

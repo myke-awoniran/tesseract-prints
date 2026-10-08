@@ -201,6 +201,49 @@ function receiptRows(o: OrderEmailData): string {
 const formatTime = (d: Date) =>
   new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Lagos' }).format(d);
 
+/* ─────────── Invoice data shared by the templates ─────────── */
+
+export interface InvoiceEmailData {
+  number: string;
+  organizationName: string;
+  periodLabel: string;
+  total: number;
+  orders: number;
+  issuedAt: Date;
+  dueAt: Date;
+  /** Private link to view and pay the invoice without signing in. */
+  payUrl: string;
+  bankDetails: string;
+  lines: { ref: string; title: string; total: number }[];
+  paidAt?: Date;
+  methodLabel?: string;
+}
+
+const formatDay = (d: Date) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Lagos' }).format(d);
+
+const MAX_EMAIL_LINES = 8;
+
+function invoiceLineRows(i: InvoiceEmailData): string {
+  const shown = i.lines.slice(0, MAX_EMAIL_LINES);
+  const items: [string, string][] = shown.map((l) => [
+    l.ref,
+    `${esc(l.title)}<br><span style="color:${C.muted};font-weight:400;">${esc(formatNaira(l.total))}</span>`
+  ]);
+  if (i.lines.length > shown.length) items.push([`And ${i.lines.length - shown.length} more`, 'Listed on the invoice']);
+  items.push(['Total', `<strong style="font-size:16px;">${esc(formatNaira(i.total))}</strong>`]);
+  return rows(items);
+}
+
+function bankCard(i: InvoiceEmailData): string {
+  if (!i.bankDetails) return '';
+  return card(
+    `${eyebrow('Prefer a bank transfer?', C.muted)}
+<p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${C.ink};">${esc(i.bankDetails).replace(/\n/g, '<br>')}<br>Use <strong>${esc(i.number)}</strong> as the payment reference.</p>`,
+    '#ffffff',
+    C.line
+  );
+}
+
 /* ─────────── Templates ─────────── */
 
 export const templates = {
@@ -379,6 +422,82 @@ ${p('The file is erased automatically 24 hours after upload. Print it before the
     };
   },
 
+  invoice_issued(i: InvoiceEmailData): RenderedEmail {
+    const subject = `Invoice ${i.number} for ${i.periodLabel}: ${formatNaira(i.total)}`;
+    return {
+      subject,
+      html: layout({
+        preheader: `${i.orders} ${i.orders === 1 ? 'order' : 'orders'} in ${i.periodLabel}, due ${formatDay(i.dueAt)}.`,
+        body: `${eyebrow('Monthly invoice')}${h1(`Your ${i.periodLabel} invoice`)}
+${p(`Here is ${esc(i.organizationName)}’s invoice for the ${i.orders} ${i.orders === 1 ? 'order' : 'orders'} you sent to print in ${esc(i.periodLabel)}. Payment is due by <strong>${esc(formatDay(i.dueAt))}</strong>.`)}
+${rows([
+  ['Invoice', `<span style="font-family:Menlo,Consolas,monospace;letter-spacing:0.04em;">${esc(i.number)}</span>`],
+  ['Issued', esc(formatDay(i.issuedAt))],
+  ['Due', `<strong>${esc(formatDay(i.dueAt))}</strong>`]
+])}
+${invoiceLineRows(i)}
+${button(`Pay ${formatNaira(i.total)}`, i.payUrl)}
+${bankCard(i)}
+${p('Pay by card or bank transfer through our secure payment partner. A receipt is emailed as soon as payment arrives.', `font-size:14px;color:${C.muted};`)}`,
+        footnote: 'This link opens your invoice without signing in. Share it only with whoever settles your account.'
+      }),
+      text: lines(
+        `Invoice ${i.number} for ${i.periodLabel}`,
+        '',
+        `${i.organizationName}: ${i.orders} ${i.orders === 1 ? 'order' : 'orders'}, total ${formatNaira(i.total)}.`,
+        `Due by ${formatDay(i.dueAt)}.`,
+        '',
+        `View and pay: ${i.payUrl}`,
+        i.bankDetails && `\nBank transfer:\n${i.bankDetails}\nReference: ${i.number}`
+      )
+    };
+  },
+
+  invoice_reminder(i: InvoiceEmailData): RenderedEmail {
+    const subject = `Reminder: invoice ${i.number} is overdue`;
+    return {
+      subject,
+      html: layout({
+        preheader: `${formatNaira(i.total)} for ${i.periodLabel} was due on ${formatDay(i.dueAt)}.`,
+        body: `${eyebrow('Payment reminder', C.warn)}${h1('Your invoice is overdue.')}
+${p(`Invoice <strong>${esc(i.number)}</strong> for ${esc(i.periodLabel)} was due on ${esc(formatDay(i.dueAt))} and we haven’t received payment yet. If you’ve already paid, thank you, and please ignore this email.`)}
+${card(
+  `<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.55;color:${C.warn};"><strong>${esc(formatNaira(i.total))}</strong> outstanding for ${i.orders} ${i.orders === 1 ? 'order' : 'orders'}.</p>`,
+  C.warnSoft,
+  '#F0DDB8'
+)}
+${button(`Pay ${formatNaira(i.total)}`, i.payUrl)}
+${bankCard(i)}`,
+        footnote: 'Questions about this invoice? Reply to this email and we’ll help.'
+      }),
+      text: lines(
+        `Invoice ${i.number} is overdue`,
+        '',
+        `${formatNaira(i.total)} for ${i.periodLabel} was due on ${formatDay(i.dueAt)}.`,
+        '',
+        `View and pay: ${i.payUrl}`,
+        i.bankDetails && `\nBank transfer:\n${i.bankDetails}\nReference: ${i.number}`
+      )
+    };
+  },
+
+  invoice_paid(i: InvoiceEmailData): RenderedEmail {
+    const subject = `Receipt: invoice ${i.number} paid`;
+    const when = formatDay(i.paidAt ?? new Date());
+    return {
+      subject,
+      html: layout({
+        preheader: `${formatNaira(i.total)} received on ${when}. Thank you.`,
+        body: `${eyebrow('Payment received', C.ok)}${h1('Thank you. Your invoice is paid.')}
+${p(`We received ${esc(formatNaira(i.total))} for invoice <strong>${esc(i.number)}</strong> (${esc(i.periodLabel)}) on ${esc(when)}${i.methodLabel ? ` by ${esc(i.methodLabel)}` : ''}.`)}
+${invoiceLineRows(i)}
+${button('View invoice', i.payUrl)}`,
+        footnote: 'Keep this email as your receipt.'
+      }),
+      text: lines(`Invoice ${i.number} paid`, '', `${formatNaira(i.total)} received on ${when}. Thank you.`, '', `View invoice: ${i.payUrl}`)
+    };
+  },
+
   consultation_received(c: ConsultationEmailData): RenderedEmail {
     const subject = 'We’ve received your enquiry · Tesseract Prints';
     return {
@@ -439,6 +558,9 @@ export const TEMPLATE_INFO: { id: TemplateId; name: string; description: string 
   { id: 'delivery_update', name: 'Delivery update', description: 'Sent when the print room posts an update and chooses to notify the customer.' },
   { id: 'delivered', name: 'Delivered', description: 'Receipt and confirmation that the file has been erased.' },
   { id: 'cancelled', name: 'Cancelled', description: 'Sent when an order is cancelled, with the reason and any refund.' },
+  { id: 'invoice_issued', name: 'Monthly invoice', description: 'Sent on the 1st to each organisation’s billing email, with a private link to view and pay.' },
+  { id: 'invoice_reminder', name: 'Invoice overdue', description: 'Sent once when an invoice passes its due date unpaid.' },
+  { id: 'invoice_paid', name: 'Invoice receipt', description: 'Sent when an invoice is paid online or marked paid by the print room.' },
   { id: 'consultation_received', name: 'Enquiry received', description: 'Acknowledges a consultation request from the website.' },
   { id: 'ops_new_order', name: 'Print room: new order', description: 'Internal alert to OPS_EMAIL for every paid or invoiced order.' },
   { id: 'ops_consultation', name: 'Print room: new enquiry', description: 'Internal alert to OPS_EMAIL for every website enquiry.' }
@@ -475,7 +597,31 @@ export function sampleEmail(id: TemplateId, webUrl: string): RenderedEmail {
     message: 'We file court bundles weekly at the Federal High Court and need a reliable, confidential partner.',
     webUrl
   };
+  const invoice: InvoiceEmailData = {
+    number: 'INV-202609-7KQ3X',
+    organizationName: 'Bakare & Partners Chambers',
+    periodLabel: 'September 2026',
+    total: 18_450_000,
+    orders: 3,
+    issuedAt: new Date(),
+    dueAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    payUrl: `${webUrl}/invoice/INV-202609-7KQ3X?t=sample`,
+    bankDetails: 'Tesseract Prints Ltd\nGTBank · 0123456789',
+    lines: [
+      { ref: 'TP-7K3Q9XA', title: 'FCTA tender submission, Lot 3', total: 2_240_000 },
+      { ref: 'TP-M4RW2LC', title: 'Court bundle, Suit FHC/ABJ/CS/1182/2026', total: 11_610_000 },
+      { ref: 'TP-Q8ZD5HN', title: 'Board pack, Q3 review', total: 4_600_000 }
+    ],
+    paidAt: new Date(),
+    methodLabel: 'card through Bachs'
+  };
   switch (id) {
+    case 'invoice_issued':
+      return templates.invoice_issued(invoice);
+    case 'invoice_reminder':
+      return templates.invoice_reminder({ ...invoice, dueAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) });
+    case 'invoice_paid':
+      return templates.invoice_paid(invoice);
     case 'order_confirmed':
       return templates.order_confirmed(order);
     case 'out_for_delivery':

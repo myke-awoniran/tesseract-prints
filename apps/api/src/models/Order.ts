@@ -43,7 +43,7 @@ export interface IOrder {
   delivery: { recipientName: string; address: string; area: string; zone: ZoneId; instructions: string };
   options: PrintOptions;
   quote: Quote;
-  payment: { status: PaymentStatus; provider?: string | null; reference?: string | null; paidAt?: Date };
+  payment: { status: PaymentStatus; provider?: string | null; reference?: string | null; checkoutId?: string | null; paidAt?: Date };
   status: OrderStatus;
   timeline: TimelineEntry[];
   file: { id?: string; name?: string; mime?: string; size?: number };
@@ -54,6 +54,8 @@ export interface IOrder {
   /** The customer's tracking token, encrypted, so later emails can carry their private tracking link. */
   accessTokenEnc?: string;
   dispatch?: Dispatch | null;
+  /** The monthly invoice an account order was billed on. */
+  invoice?: string | null;
   updates: DeliveryUpdate[];
   deliveredAt?: Date;
   createdAt: Date;
@@ -103,6 +105,8 @@ const orderSchema = new Schema<IOrder>(
       status: { type: String, enum: ['pending', 'paid', 'invoiced', 'failed'], default: 'pending' },
       provider: { type: String, default: null },
       reference: { type: String, default: null, index: true },
+      /** The gateway's own checkout id (Bachs chk_…), when it differs from the reference. */
+      checkoutId: { type: String, default: null, index: true },
       paidAt: Date
     },
     status: { type: String, enum: ORDER_STATUS_IDS, required: true, index: true },
@@ -143,12 +147,14 @@ const orderSchema = new Schema<IOrder>(
         by: { type: String, default: '' }
       }
     ],
-    deliveredAt: Date
+    deliveredAt: Date,
+    invoice: { ...uuidRef('Invoice'), default: null }
   },
   { timestamps: true, toJSON: { transform: transformOutput('accessTokenHash', 'accessTokenEnc', 'handoverCode') } }
 );
 
 orderSchema.index({ organization: 1, createdAt: -1 });
+orderSchema.index({ channel: 1, invoice: 1, createdAt: 1 });
 
 export type OrderDocument = HydratedDocument<IOrder>;
 export const Order = model<IOrder>('Order', orderSchema);

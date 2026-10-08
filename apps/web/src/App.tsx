@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Express from './pages/Express';
 import Track from './pages/Track';
 import PaymentReturn from './pages/PaymentReturn';
+import Invoice from './pages/Invoice';
 import NotFound from './pages/NotFound';
 import Login from './pages/console/Login';
 import { ConsoleLayout } from './pages/console/ConsoleLayout';
@@ -14,12 +15,16 @@ import NewOrder from './pages/console/NewOrder';
 import OrderDetail from './pages/console/OrderDetail';
 import Queue from './pages/console/Queue';
 import Settings from './pages/console/Settings';
+import Billing from './pages/console/Billing';
+import InvoiceDetail from './pages/console/InvoiceDetail';
 import OpsOverview from './pages/ops/OpsOverview';
 import Deliveries from './pages/ops/Deliveries';
 import OpsOrders from './pages/ops/OpsOrders';
 import OpsOrderDetail from './pages/ops/OpsOrderDetail';
 import Clients from './pages/ops/Clients';
 import Emails from './pages/ops/Emails';
+import OpsInvoices from './pages/ops/OpsInvoices';
+import OpsInvoiceDetail from './pages/ops/OpsInvoiceDetail';
 
 const CLIENT: readonly Role[] = ['owner', 'admin', 'member'];
 const OPS: readonly Role[] = ['operator'];
@@ -34,6 +39,7 @@ const ROUTES: Route[] = [
   { path: '/express', render: () => <Express /> },
   { path: '/track/:ref', render: (p) => <Track params={p} /> },
   { path: '/pay/return', render: () => <PaymentReturn /> },
+  { path: '/invoice/:number', render: (p) => <Invoice params={p} /> },
   { path: '/console/login', render: () => <Login /> },
   { path: '/console', render: () => <ConsoleLayout roles={CLIENT}><Overview /></ConsoleLayout> },
   { path: '/console/orders', render: () => <ConsoleLayout roles={CLIENT}><Orders /></ConsoleLayout> },
@@ -46,6 +52,10 @@ const ROUTES: Route[] = [
   { path: '/console/ops/orders/:ref', render: (p) => <ConsoleLayout roles={OPS}><OpsOrderDetail params={p} /></ConsoleLayout> },
   { path: '/console/clients', render: () => <ConsoleLayout roles={OPS}><Clients /></ConsoleLayout> },
   { path: '/console/emails', render: () => <ConsoleLayout roles={OPS}><Emails /></ConsoleLayout> },
+  { path: '/console/billing', render: () => <ConsoleLayout roles={CLIENT}><Billing /></ConsoleLayout> },
+  { path: '/console/billing/:number', render: (p) => <ConsoleLayout roles={CLIENT}><InvoiceDetail params={p} /></ConsoleLayout> },
+  { path: '/console/ops/invoices', render: () => <ConsoleLayout roles={OPS}><OpsInvoices /></ConsoleLayout> },
+  { path: '/console/ops/invoices/:number', render: (p) => <ConsoleLayout roles={OPS}><OpsInvoiceDetail params={p} /></ConsoleLayout> },
   { path: '/console/settings', render: () => <ConsoleLayout roles={CLIENT}><Settings /></ConsoleLayout> }
 ];
 

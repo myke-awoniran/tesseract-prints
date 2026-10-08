@@ -24,6 +24,7 @@ import type { UserDocument } from '../models/User.js';
 import { storeEncryptedFile, destroyFile } from './files.js';
 import { orderRef, randomToken, sha256, handoverCode, safeEqual } from './crypto.js';
 import { HttpError, badRequest, conflict } from './errors.js';
+import { gatewayLabel } from './payments/index.js';
 import { notifyOrderConfirmed, notifyStatusChanged, notifyDeliveryUpdate, sealToken } from './email/notify.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -395,6 +396,7 @@ export function serializeOrder(
       : undefined,
     updates: (order.updates ?? []).map((u) => ({ id: u._id, at: u.at.toISOString(), message: u.message, by: u.by }))
   };
+  if (internal) view.payment.provider = gatewayLabel(order.payment.provider) ?? undefined;
   if (internal) view.customer = { name: order.customer.name, email: order.customer.email, phone: order.customer.phone };
   if (includeHandover && order.handoverCode && order.status !== 'delivered' && order.status !== 'cancelled') {
     view.handoverCode = order.handoverCode;

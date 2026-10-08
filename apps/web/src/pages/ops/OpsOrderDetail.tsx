@@ -92,7 +92,7 @@ function CancelOrder({ order, onChanged }: { order: OrderView; onChanged: (o: Or
         <label htmlFor="cancel-reason">Reason (sent to the customer)</label>
         <textarea id="cancel-reason" className="c-input" rows={2} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. The file was password-protected, so we couldn’t print it." />
       </div>
-      <p className="muted-note">The file is erased immediately and the customer is emailed.{order.payment.status === 'paid' ? ' Refund the payment in Paystack.' : ''}</p>
+      <p className="muted-note">The file is erased immediately and the customer is emailed.{order.payment.status === 'paid' ? ` Refund the payment in ${order.payment.provider ?? 'the payment dashboard'}.` : ''}</p>
       {error && <div className="c-alert" role="alert">{error}</div>}
       <div className="ops-form__actions">
         <button type="button" className="c-btn c-btn--quiet c-btn--small" onClick={() => setOpen(false)}>
@@ -287,7 +287,7 @@ export default function OpsOrderDetail({ params }: { params: RouteParams }) {
             <section className="panel">
               <div className="panel__head">
                 <h2>Payment</h2>
-                <span>{order.payment.status === 'paid' ? `Paid ${formatDate(order.payment.paidAt)}` : order.payment.status === 'invoiced' ? 'Invoiced' : 'Not paid'}</span>
+                <span>{order.payment.status === 'paid' ? `Paid ${formatDate(order.payment.paidAt)}${order.payment.provider ? ` via ${order.payment.provider}` : ''}` : order.payment.status === 'invoiced' ? 'Invoiced' : 'Not paid'}</span>
               </div>
               <dl className="kv kv--money">
                 <div><dt>Printing</dt><dd>{formatNaira(order.quote.printing)}</dd></div>

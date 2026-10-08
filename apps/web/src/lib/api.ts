@@ -150,3 +150,24 @@ export function rememberExpressOrder(ref: string, token: string): void {
 export function recallExpressToken(ref: string): string | null {
   return readExpressStore()[ref]?.token ?? null;
 }
+
+// Whoever opens an invoice from its email link keeps the link on this device, to find it again after paying.
+const INVOICE_KEY = 'tesseract.invoices';
+
+export function rememberInvoiceLink(number: string, token: string): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(INVOICE_KEY) || '{}') as Record<string, string>;
+    all[number] = token;
+    localStorage.setItem(INVOICE_KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function recallInvoiceToken(number: string): string | null {
+  try {
+    return (JSON.parse(localStorage.getItem(INVOICE_KEY) || '{}') as Record<string, string>)[number] ?? null;
+  } catch {
+    return null;
+  }
+}

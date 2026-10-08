@@ -1,0 +1,156 @@
+/* Invoices: shown in the console (dark or light) and on the public invoice page, so colours inherit. */
+.inv {
+  display: grid;
+  gap: 24px;
+}
+.inv__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.inv__eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.inv__number {
+  margin: 0;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+.inv__org {
+  margin: 6px 0 0;
+  opacity: 0.75;
+}
+.inv__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 16px 0;
+  border-block: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+.inv__meta dt {
+  font-size: 12.5px;
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+.inv__meta dd {
+  margin: 0;
+  font-weight: 500;
+}
+.inv-lines {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.inv-lines th {
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: 0.65;
+  padding: 0 0 10px;
+}
+.inv-lines td {
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  vertical-align: top;
+}
+.inv-lines td + td,
+.inv-lines th + th {
+  padding-left: 16px;
+}
+.inv-lines .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.inv-lines .ref {
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.inv-lines .sub {
+  display: block;
+  font-size: 13px;
+  opacity: 0.65;
+}
+.inv-lines tfoot td {
+  border-top: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  font-weight: 700;
+  font-size: 16px;
+}
+.inv-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  white-space: nowrap;
+}
+.inv-status:before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.inv-status--open {
+  color: var(--c-lilac, var(--violet));
+}
+.inv-status--overdue {
+  color: var(--c-warn, #8a5a12);
+}
+.inv-status--paid {
+  color: var(--c-ok, var(--success));
+}
+.inv-status--void {
+  color: var(--c-muted, var(--mist));
+}
+.inv-pay {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.inv-pay__bank {
+  white-space: pre-line;
+  font-size: 14px;
+  opacity: 0.8;
+}
+.inv-scroll {
+  overflow-x: auto;
+}
+.invoice-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 16px 72px;
+}
+.invoice-page .inv {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+@media (max-width: 560px) {
+  .invoice-page .inv {
+    padding: 20px 16px;
+  }
+}
+/* Figure strips with fewer than four figures fill the row instead of leaving a gap. */
+.figures--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 1101px) {
+  .figures--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

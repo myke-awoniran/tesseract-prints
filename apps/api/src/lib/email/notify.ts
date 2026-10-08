@@ -1,10 +1,12 @@
-// Decides who hears about what. Called after an order changes; never throws.
+// Decides who hears about what. Called after an order or invoice changes; never throws.
+import { periodLabel } from '@tesseract/shared';
 import { config } from '../../config.js';
 import { Order, type OrderDocument } from '../../models/Order.js';
 import { Organization } from '../../models/Organization.js';
+import { Invoice, type InvoiceDocument } from '../../models/Invoice.js';
 import { decryptBuffer, encryptBuffer } from '../crypto.js';
 import { sendEmail } from './mailer.js';
-import { templates, type ConsultationEmailData, type OrderEmailData } from './templates.js';
+import { templates, type ConsultationEmailData, type InvoiceEmailData, type OrderEmailData } from './templates.js';
 
 /** Encrypts the customer's tracking token so later emails can include their private link. */
 export function sealToken(token: string): string {
@@ -12,7 +14,7 @@ export function sealToken(token: string): string {
   return [iv, authTag, ciphertext].map((b) => b.toString('base64url')).join('.');
 }
 
-function openToken(sealed: string | undefined): string | null {
+export function openToken(sealed: string | undefined): string | null {
   if (!sealed) return null;
   try {
     const [iv, authTag, ciphertext] = sealed.split('.').map((s) => Buffer.from(s, 'base64url'));
@@ -123,4 +125,58 @@ export function notifyConsultation(c: Omit<ConsultationEmailData, 'webUrl'>): Pr
       await sendEmail({ to: config.email.opsAddress, template: 'ops_consultation', email: templates.ops_consultation(data) });
     }
   });
+}
+
+/* ─────────── Invoices ─────────── */
+
+const METHOD_LABEL: Record<string, string> = { bank_transfer: 'bank transfer', other: 'direct payment' };
+
+function invoiceEmailData(invoice: InvoiceDocument, payUrl: string): InvoiceEmailData {
+  return {
+    number: invoice.number,
+    organizationName: invoice.organizationName,
+    periodLabel: periodLabel(invoice.period.year, invoice.period.month),
+    total: invoice.total,
+    orders: invoice.lines.length,
+    issuedAt: invoice.issuedAt,
+    dueAt: invoice.dueAt,
+    payUrl,
+    bankDetails: config.billing.bankDetails,
+    lines: invoice.lines.map((l) => ({ ref: l.ref, title: l.title, total: l.total })),
+    paidAt: invoice.paidAt,
+    methodLabel: invoice.payment.method === 'online' ? undefined : METHOD_LABEL[invoice.payment.method ?? '']
+  };
+}
+
+/** The private invoice link, or the console's billing page if the token can't be recovered. */
+async function invoiceLink(invoice: InvoiceDocument, token?: string): Promise<string> {
+  const open = token ?? openToken((await Invoice.findById(invoice._id).select('+accessTokenEnc'))?.accessTokenEnc);
+  return open ? `${config.webUrl}/invoice/${invoice.number}?t=${encodeURIComponent(open)}` : `${config.webUrl}/console/billing/${invoice.number}`;
+}
+
+async function sendInvoiceEmail(template: 'invoice_issued' | 'invoice_reminder' | 'invoice_paid', invoice: InvoiceDocument, recipients: string[], token?: string) {
+  if (!recipients.length) {
+    console.warn(`invoice ${invoice.number}: no billing email or owner to send ${template} to`);
+    return;
+  }
+  const data = invoiceEmailData(invoice, await invoiceLink(invoice, token));
+  for (const to of recipients) await sendEmail({ to, template, email: templates[template](data) });
+  if (template === 'invoice_issued') await Invoice.updateOne({ _id: invoice._id }, { $set: { emailedAt: new Date() } });
+}
+
+export function notifyInvoiceIssued(invoice: InvoiceDocument, token: string, recipients: string[]): Promise<void> {
+  return safely(() => sendInvoiceEmail('invoice_issued', invoice, recipients, token));
+}
+
+export function notifyInvoiceReminder(invoice: InvoiceDocument, recipients: string[]): Promise<void> {
+  return safely(() => sendInvoiceEmail('invoice_reminder', invoice, recipients));
+}
+
+export function notifyInvoicePaid(invoice: InvoiceDocument, recipients: string[]): Promise<void> {
+  return safely(() => sendInvoiceEmail('invoice_paid', invoice, recipients));
+}
+
+/** Sends the invoice again, e.g. after the billing email changes. */
+export function resendInvoice(invoice: InvoiceDocument, recipients: string[], token?: string): Promise<void> {
+  return safely(() => sendInvoiceEmail(invoice.status === 'paid' ? 'invoice_paid' : 'invoice_issued', invoice, recipients, token));
 }

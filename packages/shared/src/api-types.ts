@@ -2,6 +2,8 @@
 import type {
   Colour,
   FinishingId,
+  InvoicePaymentMethod,
+  InvoiceStatus,
   OrderChannel,
   OrderStatus,
   PaymentStatus,
@@ -50,7 +52,8 @@ export interface OrderView {
   timeline: TimelineEntryView[];
   options: PrintOptions;
   quote: Quote;
-  payment: { status: PaymentStatus; paidAt?: ISODateString };
+  /** `provider` is the gateway's display name, included on internal views only. */
+  payment: { status: PaymentStatus; paidAt?: ISODateString; provider?: string };
   delivery: {
     recipientName: string;
     area: string;
@@ -137,10 +140,72 @@ export interface PayResponse {
   mock: boolean;
 }
 export interface VerifyPaymentResponse {
+  /** The order ref, or the invoice number when `kind` is 'invoice'. */
   ref: string;
+  kind?: 'order' | 'invoice';
   paid: boolean;
   mock?: boolean;
   gatewayStatus?: string;
+}
+
+/* Invoices */
+export interface InvoiceLineView {
+  ref: string;
+  title: string;
+  placedBy: string;
+  createdAt: ISODateString;
+  total: number;
+}
+export interface InvoiceView {
+  number: string;
+  organization: { id: string; name: string };
+  period: { year: number; month: number; label: string };
+  status: InvoiceStatus;
+  overdue: boolean;
+  total: number;
+  currency: 'NGN';
+  billingEmail: string;
+  issuedAt: ISODateString;
+  dueAt: ISODateString;
+  paidAt?: ISODateString;
+  voidedAt?: ISODateString;
+  voidReason?: string;
+  payment: { method?: InvoicePaymentMethod; provider?: string; note?: string };
+  lines: InvoiceLineView[];
+}
+export interface InvoiceResponse {
+  invoice: InvoiceView;
+  /** How to pay by bank transfer instead, when configured. */
+  bankDetails?: string;
+}
+/** Orders placed so far this month that will appear on the next invoice. */
+export interface UpcomingInvoice {
+  period: { year: number; month: number; label: string };
+  orders: number;
+  total: number;
+}
+export interface ClientInvoicesResponse {
+  invoices: InvoiceView[];
+  upcoming: UpcomingInvoice;
+  outstanding: number;
+}
+export interface OpsInvoicesResponse {
+  invoices: InvoiceView[];
+  totals: { outstanding: number; overdue: number; paidThisMonth: number };
+}
+export interface InvoicePayRequest {
+  token?: string;
+}
+export interface MarkInvoicePaidRequest {
+  method: Exclude<InvoicePaymentMethod, 'online'>;
+  note?: string;
+}
+export interface VoidInvoiceRequest {
+  reason: string;
+}
+export interface RunBillingResponse {
+  period: { year: number; month: number; label: string };
+  created: number;
 }
 export interface OrderResponse {
   order: OrderView;

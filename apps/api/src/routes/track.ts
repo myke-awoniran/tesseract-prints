@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { OrderResponse } from '@tesseract/shared';
 import { findOrderByToken, serializeOrder } from '../lib/orders.js';
+import { reconcilePayment } from '../lib/payments/reconcile.js';
 import { notFound } from '../lib/errors.js';
 
 export default async function trackRoutes(app: FastifyInstance) {
@@ -14,8 +15,11 @@ export default async function trackRoutes(app: FastifyInstance) {
       }
     },
     async (req): Promise<OrderResponse> => {
-      const order = await findOrderByToken(req.params.ref, req.query.t, '+handoverCode');
+      let order = await findOrderByToken(req.params.ref, req.query.t, '+handoverCode');
       if (!order) throw notFound('We could not find that order. Use the tracking link from your confirmation.');
+      if (await reconcilePayment(order, req.log)) {
+        order = (await findOrderByToken(req.params.ref, req.query.t, '+handoverCode')) ?? order;
+      }
       return { order: serializeOrder(order, { includeHandover: true }) };
     }
   );

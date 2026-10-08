@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { CreateExpressOrderResponse, PayRequest, PayResponse } from '@tesseract/shared';
 import { config, paymentsAreMocked } from '../config.js';
 import { createOrder, readMultipart, findOrderByToken, serializeOrder } from '../lib/orders.js';
-import { initializeTransaction } from '../lib/paystack.js';
+import { activeGateway, orderCharge } from '../lib/payments/index.js';
 import { conflict, notFound } from '../lib/errors.js';
 
 // Express printing: no account needed. The customer keeps a private access token
@@ -30,24 +30,27 @@ export default async function expressRoutes(app: FastifyInstance) {
       if (order.status !== 'awaiting_payment') throw conflict('This order has already been paid for.');
 
       const reference = `${order.ref}-${Date.now().toString(36).toUpperCase()}`;
-      order.payment.reference = reference;
-      await order.save();
-
-      const callbackUrl = `${config.webUrl}/pay/return?reference=${encodeURIComponent(reference)}`;
+      const returnUrl = `${config.webUrl}/pay/return`;
 
       if (paymentsAreMocked) {
-        // Development only: config.ts refuses to start in production without a Paystack key.
-        return { authorizationUrl: `${callbackUrl}&mock=1`, reference, mock: true };
+        // Development only: config.ts refuses to start in production without a payment key.
+        order.payment.reference = reference;
+        order.payment.provider = 'mock';
+        await order.save();
+        return { authorizationUrl: `${returnUrl}?reference=${encodeURIComponent(reference)}&mock=1`, reference, mock: true };
       }
 
-      const data = await initializeTransaction({
-        email: order.customer.email,
-        amountKobo: order.quote.total,
+      const checkout = await activeGateway.startCheckout(orderCharge(order), {
         reference,
-        callbackUrl,
-        metadata: { orderRef: order.ref, channel: 'express' }
+        returnUrl,
+        cancelUrl: `${returnUrl}?reference=${encodeURIComponent(reference)}&cancelled=1`
       });
-      return { authorizationUrl: data.authorization_url, reference, mock: false };
+      order.payment.reference = reference;
+      order.payment.provider = activeGateway.id;
+      order.payment.checkoutId = checkout.checkoutId;
+      await order.save();
+      req.log.info({ ref: order.ref, provider: activeGateway.id, reference }, 'checkout started');
+      return { authorizationUrl: checkout.url, reference, mock: false };
     }
   );
 }

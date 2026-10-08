@@ -13,6 +13,7 @@ const CLIENT_NAV: NavItem[] = [
   { to: '/console', label: 'Overview', icon: Icon.Grid },
   { to: '/console/orders', label: 'Orders', icon: Icon.List },
   { to: '/console/orders/new', label: 'New order', icon: Icon.Plus },
+  { to: '/console/billing', label: 'Billing', icon: Icon.Receipt },
   { to: '/console/settings', label: 'Settings', icon: Icon.Settings }
 ];
 const OPERATOR_NAV: NavItem[] = [
@@ -21,6 +22,7 @@ const OPERATOR_NAV: NavItem[] = [
   { to: '/console/deliveries', label: 'Deliveries', icon: Icon.Truck },
   { to: '/console/ops/orders', label: 'All orders', icon: Icon.List },
   { to: '/console/clients', label: 'Clients', icon: Icon.Users },
+  { to: '/console/ops/invoices', label: 'Invoices', icon: Icon.Receipt },
   { to: '/console/emails', label: 'Emails', icon: Icon.Mail }
 ];
 

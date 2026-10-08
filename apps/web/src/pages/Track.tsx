@@ -6,6 +6,7 @@ import { Icon } from '../components/Icons';
 import { Link, useQuery, type RouteParams } from '../lib/router';
 import { api, recallExpressToken, rememberExpressOrder, errorMessage } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { PayNowButton, expressPayPath } from '../components/PayNowButton';
 
 type TrackState = { status: 'loading' | 'ready' | 'error'; order: OrderView | null; error: string };
 
@@ -86,9 +87,16 @@ export default function Track({ params }: { params: RouteParams }) {
                 </h2>
 
                 {order.status === 'awaiting_payment' ? (
-                  <div className="alert" style={{ marginTop: 28 }}>
-                    Payment has not been confirmed yet. If you have just paid, this page will update within a minute.
-                  </div>
+                  <>
+                    <div className="alert" style={{ marginTop: 28 }}>
+                      Payment has not been confirmed yet. If you have just paid, this page will update within a minute.
+                    </div>
+                    {token && (
+                      <div style={{ marginTop: 16 }}>
+                        <PayNowButton path={expressPayPath(ref)} body={{ token }} label={`Pay ${formatNaira(order.quote.total)}`} />
+                      </div>
+                    )}
+                  </>
                 ) : order.status === 'cancelled' ? (
                   <div className="alert" style={{ marginTop: 28 }}>This order was cancelled and the document erased.</div>
                 ) : (

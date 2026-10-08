@@ -118,6 +118,16 @@ export function statusLabel(id: string): string {
 export type OrderChannel = 'express' | 'enterprise';
 export type PaymentStatus = 'pending' | 'paid' | 'invoiced' | 'failed';
 
+/* Monthly invoices for account organisations */
+export type InvoiceStatus = 'open' | 'paid' | 'void';
+export type InvoicePaymentMethod = 'online' | 'bank_transfer' | 'other';
+export const INVOICE_DUE_DAYS = 14;
+
+/** e.g. "October 2026" */
+export function periodLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
 export const ROLES = ['owner', 'admin', 'member', 'operator'] as const;
 export type Role = (typeof ROLES)[number];
 export const CLIENT_ROLES: readonly Role[] = ['owner', 'admin', 'member'];

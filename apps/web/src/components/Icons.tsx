@@ -122,6 +122,11 @@ export const Icon = {
       <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4 19.5h16" />
     </svg>
   ),
+  Receipt: (p: IconProps) => (
+    <svg {...base} {...p}>
+      <path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2zM9 8h6M9 11.5h6M9 15h3.5" />
+    </svg>
+  ),
   ArrowUp: (p: IconProps) => (
     <svg {...base} {...p}>
       <path d="M12 19V5M6 11l6-6 6 6" />

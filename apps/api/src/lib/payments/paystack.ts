@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
-import { config } from '../config.js';
-import { HttpError } from './errors.js';
-import { safeEqual } from './crypto.js';
+import { config } from '../../config.js';
+import { HttpError } from '../errors.js';
+import { safeEqual } from '../crypto.js';
+import { ownerMetadata, type PaymentGateway } from './types.js';
 
 const BASE_URL = 'https://api.paystack.co';
 
@@ -29,7 +30,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(BASE_URL + path, {
       ...init,
-      headers: { Authorization: `Bearer ${config.paystackSecret}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${config.payments.paystack.secretKey}`, 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(15_000)
     });
   } catch {
@@ -68,6 +69,33 @@ export function verifyTransaction(reference: string): Promise<PaystackTransactio
 
 export function isValidWebhookSignature(rawBody: Buffer | undefined, signature: unknown): boolean {
   if (!rawBody || typeof signature !== 'string') return false;
-  const expected = crypto.createHmac('sha512', config.paystackSecret).update(rawBody).digest('hex');
+  const expected = crypto.createHmac('sha512', config.payments.paystack.secretKey).update(rawBody).digest('hex');
   return safeEqual(expected, signature);
 }
+
+export function amountMatches(amountKobo: number, data: PaystackTransaction | undefined): boolean {
+  return data?.status === 'success' && Number(data.amount) === amountKobo && data.currency === 'NGN';
+}
+
+export const paystackGateway: PaymentGateway = {
+  id: 'paystack',
+  label: 'Paystack',
+  configured: Boolean(config.payments.paystack.secretKey),
+
+  async startCheckout(charge, { reference, returnUrl }) {
+    const data = await initializeTransaction({
+      email: charge.email,
+      amountKobo: charge.amountKobo,
+      reference,
+      callbackUrl: `${returnUrl}?reference=${encodeURIComponent(reference)}`,
+      metadata: { kind: charge.owner.kind, ...ownerMetadata(charge.owner) }
+    });
+    return { url: data.authorization_url, checkoutId: null };
+  },
+
+  async checkPayment(charge, attempt) {
+    if (!attempt.reference) return { paid: false, status: 'unknown' };
+    const data = await verifyTransaction(attempt.reference);
+    return { paid: amountMatches(charge.amountKobo, data), status: data?.status ?? 'unknown' };
+  }
+};
