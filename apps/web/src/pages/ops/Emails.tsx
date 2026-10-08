@@ -7,6 +7,7 @@ import { Link } from '../../lib/router';
 import { formatDate } from '../../lib/format';
 import { PageHead } from '../console/ConsoleLayout';
 import { Icon } from '../../components/Icons';
+import { useLiveReload } from '../../lib/realtime';
 
 const STATUS_LABEL: Record<string, string> = { sent: 'Sent', failed: 'Failed', skipped: 'Not sent' };
 const PROVIDER_LABEL: Record<string, string> = { resend: 'Resend', smtp: 'SMTP', log: 'Not configured' };
@@ -133,9 +134,10 @@ export default function Emails() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [resending, setResending] = useState('');
   const [error, setError] = useState('');
+  const live = useLiveReload({ delay: 2500 });
   const [{ loading, data, error: loadError }, setState] = useAsync(
     (signal) => api<EmailsResponse>(`/ops/emails?page=${page}${status ? `&status=${status}` : ''}`, { auth: true, signal }),
-    [status, page]
+    [status, page, live]
   );
 
   async function view(id: string) {

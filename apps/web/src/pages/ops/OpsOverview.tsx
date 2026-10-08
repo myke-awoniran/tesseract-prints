@@ -7,6 +7,7 @@ import { useAsync } from '../../lib/useAsync';
 import { formatDate, formatNumber } from '../../lib/format';
 import { PageHead } from '../console/ConsoleLayout';
 import { Icon } from '../../components/Icons';
+import { useLiveReload } from '../../lib/realtime';
 
 const STAGE_LINKS: Record<string, string> = {
   queued: '/console/queue',
@@ -99,7 +100,8 @@ function RevenueChart({ series }: { series: OpsOverviewResponse['series'] }) {
 
 export default function OpsOverview() {
   const { user } = useSession();
-  const [{ loading, data, error }] = useAsync((signal) => api<OpsOverviewResponse>('/ops/overview', { auth: true, signal }), []);
+  const live = useLiveReload({ invoices: true });
+  const [{ loading, data, error }] = useAsync((signal) => api<OpsOverviewResponse>('/ops/overview', { auth: true, signal }), [live]);
   const firstName = user.name.split(' ')[0] ?? user.name;
   const zoneMax = data ? Math.max(1, ...data.byZone.map((z) => z.orders)) : 1;
   const today = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Lagos' }).format(new Date());

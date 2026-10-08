@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { LoginResponse, OrganizationSummary, PublicUser, SessionResponse } from '@tesseract/shared';
 import { api, getToken, setToken, SIGNED_OUT_EVENT } from './api';
+import { syncRealtimeIdentity } from './realtime';
 
 type AuthState =
   | { status: 'loading'; user: null; organization: null }
@@ -36,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener(SIGNED_OUT_EVENT, onSignedOut);
     return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut);
   }, []);
+
+  // Live updates follow the session: operators and client users join their rooms once signed in.
+  useEffect(() => {
+    if (state.status !== 'loading') syncRealtimeIdentity();
+  }, [state.status]);
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await api<LoginResponse>('/auth/login', { method: 'POST', body: { email, password } });

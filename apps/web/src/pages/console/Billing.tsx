@@ -5,9 +5,11 @@ import { Link } from '../../lib/router';
 import { formatNumber } from '../../lib/format';
 import { InvoiceStatus } from '../../components/InvoiceSheet';
 import { PageHead } from './ConsoleLayout';
+import { useLiveReload } from '../../lib/realtime';
 
 export default function Billing() {
-  const [{ loading, data, error }] = useAsync((signal) => api<ClientInvoicesResponse>('/enterprise/invoices', { auth: true, signal }), []);
+  const live = useLiveReload({ orders: false, invoices: true });
+  const [{ loading, data, error }] = useAsync((signal) => api<ClientInvoicesResponse>('/enterprise/invoices', { auth: true, signal }), [live]);
 
   return (
     <>

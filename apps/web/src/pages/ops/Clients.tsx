@@ -3,9 +3,11 @@ import { api } from '../../lib/api';
 import { useAsync } from '../../lib/useAsync';
 import { formatDate, formatNumber } from '../../lib/format';
 import { PageHead } from '../console/ConsoleLayout';
+import { useLiveReload } from '../../lib/realtime';
 
 export default function Clients() {
-  const [{ loading, data, error }] = useAsync((signal) => api<ClientsResponse>('/ops/clients', { auth: true, signal }), []);
+  const live = useLiveReload({ invoices: true });
+  const [{ loading, data, error }] = useAsync((signal) => api<ClientsResponse>('/ops/clients', { auth: true, signal }), [live]);
   const accountSpend = data?.clients.reduce((a, c) => a + c.spend, 0) ?? 0;
   const accountMonth = data?.clients.reduce((a, c) => a + c.spendThisMonth, 0) ?? 0;
 

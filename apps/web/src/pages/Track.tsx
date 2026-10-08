@@ -7,6 +7,17 @@ import { Link, useQuery, type RouteParams } from '../lib/router';
 import { api, recallExpressToken, rememberExpressOrder, errorMessage } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { PayNowButton, expressPayPath } from '../components/PayNowButton';
+import { useTrackedOrder } from '../lib/realtime';
+
+/** One line describing what just changed, shown briefly when a live update arrives. */
+function describeChange(prev: OrderView | null, next: OrderView): string {
+  if (!prev) return '';
+  if (prev.status !== next.status) return next.status === 'delivered' ? 'Delivered. Thank you.' : `Now: ${next.statusLabel}`;
+  if (next.updates.length > prev.updates.length) return next.updates[next.updates.length - 1].message;
+  if (next.dispatch && next.dispatch.riderName !== prev.dispatch?.riderName) return `${next.dispatch.riderName} is bringing your envelope.`;
+  if (next.dispatch?.eta && next.dispatch.eta !== prev.dispatch?.eta) return 'The expected arrival time has changed.';
+  return '';
+}
 
 type TrackState = { status: 'loading' | 'ready' | 'error'; order: OrderView | null; error: string };
 
@@ -16,6 +27,7 @@ export default function Track({ params }: { params: RouteParams }) {
   const token = query.get('t') || recallExpressToken(ref);
   const [state, setState] = useState<TrackState>({ status: 'loading', order: null, error: '' });
   const [copied, setCopied] = useState(false);
+  const [flash, setFlash] = useState<{ text: string; key: number } | null>(null);
 
   const load = useCallback(async () => {
     if (!token) {
@@ -31,11 +43,27 @@ export default function Track({ params }: { params: RouteParams }) {
     }
   }, [ref, token]);
 
+  // Changes arrive over the live connection the moment they happen.
+  const live = useTrackedOrder(ref, token, (next) => {
+    setState((s) => {
+      const text = describeChange(s.order, next);
+      if (text) setFlash({ text, key: Date.now() });
+      return { status: 'ready', order: next, error: '' };
+    });
+  });
+
+  // Polling is only the safety net: every 20 seconds without a live connection, every 2 minutes with one.
   useEffect(() => {
     load();
-    const t = setInterval(load, 20000);
+    const t = setInterval(load, live ? 120_000 : 20_000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [load, live]);
+
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 8000);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   const order = state.order;
   const link = `${window.location.origin}/track/${ref}?t=${token}`;
@@ -60,7 +88,14 @@ export default function Track({ params }: { params: RouteParams }) {
         <div className="page-head">
           <div className="container">
             <h1>Order {ref}</h1>
-            <p>This page updates on its own. Keep the link private: it is the key to your order.</p>
+            <p>
+              {live && (
+                <span className="live-pill">
+                  <span aria-hidden="true" /> Live
+                </span>
+              )}
+              This page updates on its own. Keep the link private: it is the key to your order.
+            </p>
           </div>
         </div>
 
@@ -78,6 +113,11 @@ export default function Track({ params }: { params: RouteParams }) {
             </div>
           )}
 
+          {flash && order && (
+            <div key={flash.key} className="live-flash" role="status">
+              <Icon.Check width={16} height={16} /> {flash.text}
+            </div>
+          )}
           {order && (
             <div className="track">
               <section aria-labelledby="track-status">

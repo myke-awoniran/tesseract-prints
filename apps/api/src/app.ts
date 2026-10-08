@@ -20,6 +20,7 @@ import authRoutes from './routes/auth.js';
 import enterpriseRoutes from './routes/enterprise.js';
 import opsRoutes from './routes/ops.js';
 import { setMailLogger } from './lib/email/mailer.js';
+import { attachRealtime } from './lib/realtime.js';
 
 export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const app = Fastify({
@@ -34,6 +35,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   await app.register(rateLimit, { max: 300, timeWindow: '1 minute' });
   await app.register(multipart, { limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 40, fieldSize: 4096 } });
   await app.register(authPlugin, { secret: config.jwtSecret });
+  attachRealtime(app, config.corsOrigins);
 
   app.setErrorHandler((err: FastifyError | HttpError, req, reply) => {
     if ('code' in err && err.code === 'FST_REQ_FILE_TOO_LARGE') {

@@ -6,6 +6,7 @@ import { Link } from '../../lib/router';
 import { formatDate, pillClass } from '../../lib/format';
 import { PageHead } from '../console/ConsoleLayout';
 import { jobSummary } from '../../components/ops';
+import { useLiveReload } from '../../lib/realtime';
 
 const STATUS_FILTERS = [
   { id: 'active', label: 'In progress' },
@@ -36,6 +37,7 @@ export default function OpsOrders() {
     return () => clearTimeout(t);
   }, [q]);
 
+  const live = useLiveReload();
   const [{ loading, data, error }] = useAsync(
     (signal) => {
       const params = new URLSearchParams({ page: String(page) });
@@ -44,7 +46,7 @@ export default function OpsOrders() {
       if (query) params.set('q', query);
       return api<OrdersPageResponse>(`/ops/orders?${params}`, { auth: true, signal });
     },
-    [status, channel, query, page]
+    [status, channel, query, page, live]
   );
 
   return (

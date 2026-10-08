@@ -6,6 +6,7 @@ import { formatDate, formatNumber, pillClass } from '../../lib/format';
 import { formatNaira, type OrderView, type StatsResponse } from '@tesseract/shared';
 import { PageHead } from './ConsoleLayout';
 import { Icon } from '../../components/Icons';
+import { useLiveReload } from '../../lib/realtime';
 
 function BarChart({ series }: { series: StatsResponse['series'] }) {
   const max = Math.max(1, ...series.map((s) => s.orders));
@@ -45,7 +46,8 @@ function BarChart({ series }: { series: StatsResponse['series'] }) {
 
 export default function Overview() {
   const { user, organization } = useSession();
-  const [{ loading, data, error }] = useAsync((signal) => api<StatsResponse>('/enterprise/stats', { auth: true, signal }), []);
+  const live = useLiveReload();
+  const [{ loading, data, error }] = useAsync((signal) => api<StatsResponse>('/enterprise/stats', { auth: true, signal }), [live]);
   const firstName = user.name.split(' ')[0] ?? user.name;
   const maxStatus = data ? Math.max(1, ...data.byStatus.map((b) => b.count)) : 1;
 

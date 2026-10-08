@@ -5,6 +5,7 @@ import { Link, type RouteParams } from '../../lib/router';
 import { useAsync } from '../../lib/useAsync';
 import { InvoiceSheet } from '../../components/InvoiceSheet';
 import { PageHead } from '../console/ConsoleLayout';
+import { useLiveReload } from '../../lib/realtime';
 
 function MarkPaid({ invoice, onChanged }: { invoice: InvoiceView; onChanged: (i: InvoiceView) => void }) {
   const [open, setOpen] = useState(false);
@@ -110,9 +111,10 @@ function VoidInvoice({ invoice, onChanged }: { invoice: InvoiceView; onChanged: 
 
 export default function OpsInvoiceDetail({ params }: { params: RouteParams }) {
   const number = (params.number ?? '').toUpperCase();
+  const live = useLiveReload({ orders: false, invoices: true });
   const [{ loading, data, error }, setState] = useAsync(
     (signal) => api<InvoiceResponse>(`/ops/invoices/${encodeURIComponent(number)}`, { auth: true, signal }),
-    [number]
+    [number, live]
   );
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [resending, setResending] = useState(false);

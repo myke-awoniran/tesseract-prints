@@ -7,6 +7,7 @@ import { pillClass } from '../../lib/format';
 import { PageHead } from './ConsoleLayout';
 import { Icon } from '../../components/Icons';
 import { age, jobSummary } from '../../components/ops';
+import { useLiveReload } from '../../lib/realtime';
 
 function expiresIn(o: OrderView): { text: string; urgent: boolean } | null {
   if (!o.file.available || !o.file.expiresAt) return null;
@@ -82,7 +83,8 @@ function Job({ order, onChanged }: { order: OrderView; onChanged: (order: OrderV
 }
 
 export default function Queue() {
-  const [{ loading, data, error }, setState] = useAsync((signal) => api<QueueResponse>('/ops/queue', { auth: true, signal }), []);
+  const live = useLiveReload({ order: (o) => ['queued', 'printing', 'sealed'].includes(o.status) });
+  const [{ loading, data, error }, setState] = useAsync((signal) => api<QueueResponse>('/ops/queue', { auth: true, signal }), [live]);
   const [justSealed, setJustSealed] = useState<string[]>([]);
 
   function onChanged(updated: OrderView) {

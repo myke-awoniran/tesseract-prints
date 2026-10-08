@@ -6,6 +6,7 @@ import { Link } from '../../lib/router';
 import { PageHead } from './ConsoleLayout';
 import { OrdersTable } from './Overview';
 import { Icon } from '../../components/Icons';
+import { useLiveReload } from '../../lib/realtime';
 
 const FILTERS = [
   { id: '', label: 'All' },
@@ -28,12 +29,13 @@ export default function Orders() {
     return () => clearTimeout(t);
   }, [q]);
 
+  const live = useLiveReload();
   const [{ loading, data, error }] = useAsync((signal) => {
     const params = new URLSearchParams({ page: String(page) });
     if (status) params.set('status', status);
     if (query) params.set('q', query);
     return api<OrdersPageResponse>(`/enterprise/orders?${params}`, { auth: true, signal });
-  }, [status, query, page]);
+  }, [status, query, page, live]);
 
   return (
     <>

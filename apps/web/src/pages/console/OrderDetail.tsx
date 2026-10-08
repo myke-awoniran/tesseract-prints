@@ -5,12 +5,14 @@ import { useAsync } from '../../lib/useAsync';
 import { formatDate, formatBytes, pillClass } from '../../lib/format';
 import { PageHead } from './ConsoleLayout';
 import { UpdatesFeed, formatTime } from '../../components/ops';
+import { useLiveReload } from '../../lib/realtime';
 
 export default function OrderDetail({ params }: { params: RouteParams }) {
   const ref = params.ref ?? '';
+  const live = useLiveReload({ order: (o) => o.ref === ref });
   const [{ loading, data, error }] = useAsync(
     (signal) => api<OrderResponse>(`/enterprise/orders/${encodeURIComponent(ref)}`, { auth: true, signal }),
-    [ref]
+    [ref, live]
   );
   const order = data?.order;
   const current = order ? FULFILMENT_FLOW.indexOf(order.status) : -1;

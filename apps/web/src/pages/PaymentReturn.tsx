@@ -6,6 +6,7 @@ import { SealStamp } from '../components/SealStamp';
 import { PayNowButton, expressPayPath } from '../components/PayNowButton';
 import { Link, useQuery, useRouter } from '../lib/router';
 import { api, getToken, recallExpressToken, recallInvoiceToken, recallLatestExpressOrder, errorMessage } from '../lib/api';
+import { useTrackedOrder } from '../lib/realtime';
 
 // A checkout is valid for an hour; allow a little longer for the customer to come back.
 const RECENT_ORDER_MS = 2 * 60 * 60 * 1000;
@@ -65,6 +66,11 @@ export default function PaymentReturn() {
   const token = ref && !isInvoice ? recallExpressToken(ref) : null;
   const trackUrl = ref && token ? `/track/${ref}?t=${token}` : null;
 
+  // A slow confirmation (late webhook) flips this page to "Paid" the moment it lands.
+  useTrackedOrder(state.status === 'pending' && ref ? ref : '', token, (order) => {
+    if (order.payment.status === 'paid') setState({ status: 'paid', ref: order.ref, kind: 'order' });
+  });
+
   if (isInvoice && ref) return <InvoiceReturn status={state.status as 'paid' | 'pending' | 'cancelled'} number={ref} />;
 
   return (
@@ -96,7 +102,7 @@ export default function PaymentReturn() {
         {state.status === 'pending' && (
           <>
             <h1>We haven’t received confirmation yet.</h1>
-            <p>If you completed payment, it can take a minute to arrive. Your tracking page will update automatically.</p>
+            <p>If you completed payment, it can take a minute to arrive. {token ? 'This page will update by itself the moment it does.' : 'Your tracking page will update automatically.'}</p>
             {trackUrl && <Link to={trackUrl} className="btn btn--primary">Go to your tracking page</Link>}
           </>
         )}

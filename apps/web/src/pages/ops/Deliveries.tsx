@@ -6,6 +6,7 @@ import { Link } from '../../lib/router';
 import { PageHead } from '../console/ConsoleLayout';
 import { Icon } from '../../components/Icons';
 import { DeliverForm, RiderForm, UpdateComposer, UpdatesFeed, age, formatTime, jobSummary } from '../../components/ops';
+import { useLiveReload } from '../../lib/realtime';
 
 function Address({ order }: { order: OrderView }) {
   return (
@@ -93,7 +94,8 @@ function RoadCard({ order, onChanged }: { order: OrderView; onChanged: (o: Order
 }
 
 export default function Deliveries() {
-  const [{ loading, data, error }, setState] = useAsync((signal) => api<QueueResponse>('/ops/deliveries', { auth: true, signal }), []);
+  const live = useLiveReload({ order: (o) => ['sealed', 'out_for_delivery', 'delivered'].includes(o.status) || Boolean(o.dispatch) });
+  const [{ loading, data, error }, setState] = useAsync((signal) => api<QueueResponse>('/ops/deliveries', { auth: true, signal }), [live]);
   const [delivered, setDelivered] = useState<string[]>([]);
 
   function onChanged(updated: OrderView) {

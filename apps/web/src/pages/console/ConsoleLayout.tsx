@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/auth';
 import { Link, Redirect, useRouter } from '../../lib/router';
 import { Wordmark } from '../../components/Logo';
 import { Icon } from '../../components/Icons';
+import { LiveStatus, LiveToasts } from '../../components/Live';
 import { initials } from '../../lib/format';
 import { consoleClass, useConsoleTheme } from '../../lib/theme';
 
@@ -84,6 +85,7 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
               </Link>
             ))}
           </nav>
+          <LiveStatus />
           <div className="sidebar__user">
             <span className="avatar" aria-hidden="true">{initials(user.name)}</span>
             <div>
@@ -108,6 +110,7 @@ export function ConsoleLayout({ children, roles }: { children: ReactNode; roles?
           {children}
         </main>
       </div>
+      <LiveToasts />
     </div>
   );
 }

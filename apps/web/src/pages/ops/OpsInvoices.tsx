@@ -5,6 +5,7 @@ import { useAsync } from '../../lib/useAsync';
 import { Link } from '../../lib/router';
 import { InvoiceStatus } from '../../components/InvoiceSheet';
 import { PageHead } from '../console/ConsoleLayout';
+import { useLiveReload } from '../../lib/realtime';
 
 const FILTERS = [
   { id: '', label: 'All' },
@@ -19,9 +20,10 @@ export default function OpsInvoices() {
   const [reload, setReload] = useState(0);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const live = useLiveReload({ orders: false, invoices: true });
   const [{ loading, data, error }] = useAsync(
     (signal) => api<OpsInvoicesResponse>(`/ops/invoices${status ? `?status=${status}` : ''}`, { auth: true, signal }),
-    [status, reload]
+    [status, reload, live]
   );
 
   async function runBilling() {

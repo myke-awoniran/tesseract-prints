@@ -7,6 +7,7 @@ import { formatBytes, formatDate, pillClass } from '../../lib/format';
 import { PageHead } from '../console/ConsoleLayout';
 import { Icon } from '../../components/Icons';
 import { DeliverForm, RiderForm, UpdateComposer, UpdatesFeed, formatTime } from '../../components/ops';
+import { useLiveReload } from '../../lib/realtime';
 
 const ACTION_LABELS: Record<string, string> = {
   file_downloaded: 'Downloaded the file',
@@ -109,7 +110,8 @@ function CancelOrder({ order, onChanged }: { order: OrderView; onChanged: (o: Or
 
 export default function OpsOrderDetail({ params }: { params: RouteParams }) {
   const ref = (params.ref ?? '').toUpperCase();
-  const [{ loading, data, error }, setState] = useAsync((signal) => api<OpsOrderResponse>(`/ops/orders/${encodeURIComponent(ref)}`, { auth: true, signal }), [ref]);
+  const live = useLiveReload({ order: (o) => o.ref === ref, delay: 1200 });
+  const [{ loading, data, error }, setState] = useAsync((signal) => api<OpsOrderResponse>(`/ops/orders/${encodeURIComponent(ref)}`, { auth: true, signal }), [ref, live]);
   const [actionError, setActionError] = useState('');
   const [resending, setResending] = useState('');
   const order = data?.order;

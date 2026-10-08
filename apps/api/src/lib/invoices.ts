@@ -11,6 +11,7 @@ import { conflict } from './errors.js';
 import { DAY, lagosPeriod, periodBounds, periodKey, shiftPeriod, type Period } from './time.js';
 import { activeGateway, gatewayLabel, invoiceCharge } from './payments/index.js';
 import { notifyInvoiceIssued, notifyInvoicePaid, notifyInvoiceReminder, sealToken } from './email/notify.js';
+import { publishInvoice } from './realtime.js';
 
 const NUMBER_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -106,6 +107,7 @@ export async function generateInvoices(period: Period, log?: FastifyBaseLogger):
     created += 1;
     log?.info({ number: invoice.number, organization: org.name, total: invoice.total }, 'invoice issued');
     void notifyInvoiceIssued(invoice, token, recipients);
+    publishInvoice(invoice, 'issued');
   }
   return created;
 }
@@ -162,7 +164,10 @@ export async function markInvoicePaid(
   const result = await Invoice.updateOne({ _id: invoiceId, status: 'open' }, { $set: set });
   if (result.modifiedCount !== 1) return false;
   const invoice = await Invoice.findById(invoiceId);
-  if (invoice) void notifyInvoicePaid(invoice, await billingRecipients(invoice.organization, invoice.billingEmail));
+  if (invoice) {
+    void notifyInvoicePaid(invoice, await billingRecipients(invoice.organization, invoice.billingEmail));
+    publishInvoice(invoice, 'paid');
+  }
   return true;
 }
 
@@ -175,6 +180,7 @@ export async function voidInvoice(invoice: InvoiceDocument, reason: string): Pro
   );
   if (result.modifiedCount !== 1) throw conflict('This invoice changed while you were working on it. Reload and try again.');
   await Order.updateMany({ invoice: invoice._id }, { $set: { invoice: null } });
+  publishInvoice({ number: invoice.number, status: 'void', organization: invoice.organization, organizationName: invoice.organizationName, total: invoice.total }, 'void');
 }
 
 /** Sends the customer to the active gateway to pay an open invoice. */

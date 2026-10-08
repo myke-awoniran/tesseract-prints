@@ -26,6 +26,7 @@ import { orderRef, randomToken, sha256, handoverCode, safeEqual } from './crypto
 import { HttpError, badRequest, conflict } from './errors.js';
 import { gatewayLabel } from './payments/index.js';
 import { notifyOrderConfirmed, notifyStatusChanged, notifyDeliveryUpdate, sealToken } from './email/notify.js';
+import { publishOrder } from './realtime.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[0-9 ()-]{7,20}$/;
@@ -221,6 +222,7 @@ export async function createOrder(input: {
     try {
       const order = await Order.create({ ...base, ref: orderRef() });
       if (isEnterprise) void notifyOrderConfirmed(order);
+      void publishOrder(order, 'created');
       return { order, accessToken };
     } catch (err) {
       const duplicate = (err as { code?: number }).code === 11000;
@@ -255,7 +257,10 @@ export async function markPaid(orderId: string, provider: string): Promise<void>
   );
   if (result.modifiedCount === 1) {
     const order = await Order.findById(orderId);
-    if (order) void notifyOrderConfirmed(order);
+    if (order) {
+      void notifyOrderConfirmed(order);
+      void publishOrder(order, 'paid');
+    }
   }
 }
 
@@ -281,6 +286,7 @@ export async function addDeliveryUpdate(order: OrderDocument, message: string, c
   await order.save();
   await AccessLog.create({ order: order._id, user: ctx.user?._id ?? null, action: 'update_posted', detail: text.slice(0, 200), ip: ctx.ip });
   if (ctx.notify) void notifyDeliveryUpdate(order, text);
+  void publishOrder(order, 'update');
   return order;
 }
 
@@ -333,6 +339,7 @@ export async function advanceStatus(
   await order.save();
   await AccessLog.insertMany(logs);
   void notifyStatusChanged(order, note);
+  void publishOrder(order, 'status');
   return order;
 }
 

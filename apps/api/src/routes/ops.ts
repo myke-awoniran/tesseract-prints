@@ -28,6 +28,7 @@ import { User } from '../models/User.js';
 import { EmailLog, type EmailLogDocument } from '../models/EmailLog.js';
 import { advanceStatus, serializeOrder, fileIsAvailable, assignDispatch, addDeliveryUpdate } from '../lib/orders.js';
 import { readDecryptedFile } from '../lib/files.js';
+import { publishOrder } from '../lib/realtime.js';
 import { requireUser } from '../lib/request.js';
 import { DAY, LAGOS_OFFSET_MS, startOfLagosDay, startOfLagosMonth } from '../lib/time.js';
 import { badRequest, gone, notFound } from '../lib/errors.js';
@@ -277,6 +278,7 @@ export default async function opsRoutes(app: FastifyInstance) {
       assignDispatch(order, { name: req.body.riderName, phone: req.body.riderPhone }, req.body.eta);
       await order.save();
       await AccessLog.create({ order: order._id, user: requireUser(req)._id, action: 'rider_assigned', detail: `${order.dispatch?.riderName} (${order.dispatch?.riderPhone})`, ip: req.ip });
+      void publishOrder(order, 'dispatch');
       return { order: serializeOrder(order, { internal: true }) };
     }
   );

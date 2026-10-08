@@ -5,12 +5,14 @@ import { useAsync } from '../../lib/useAsync';
 import { InvoiceSheet } from '../../components/InvoiceSheet';
 import { PayNowButton } from '../../components/PayNowButton';
 import { PageHead } from './ConsoleLayout';
+import { useLiveReload } from '../../lib/realtime';
 
 export default function InvoiceDetail({ params }: { params: RouteParams }) {
   const number = params.number ?? '';
+  const live = useLiveReload({ orders: false, invoices: true });
   const [{ loading, data, error }] = useAsync(
     (signal) => api<InvoiceResponse>(`/enterprise/invoices/${encodeURIComponent(number)}`, { auth: true, signal }),
-    [number]
+    [number, live]
   );
   const invoice = data?.invoice;
 
